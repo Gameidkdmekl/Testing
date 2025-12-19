@@ -1235,7 +1235,7 @@ end
                 end)
 
                 clicker.MouseEnter:Connect(function()
-                    stroke.Color = Color3.fromRGB(160, 0, 0)
+                    stroke.Color = Color3.fromRGB(0, 170, 255)
                 end)
 
                 clicker.MouseLeave:Connect(function()
@@ -2895,7 +2895,7 @@ local function createGradientButton(parent, position, size, text)
     clicker.Parent = button
 
     clicker.MouseEnter:Connect(function()
-        stroke.Color = Color3.fromRGB(160, 0, 0)
+        stroke.Color = Color3.fromRGB(0, 170, 255)
     end)
 
     clicker.MouseLeave:Connect(function()
