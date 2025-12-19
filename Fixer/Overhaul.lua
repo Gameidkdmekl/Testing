@@ -1239,7 +1239,7 @@ end
                 end)
 
                 clicker.MouseLeave:Connect(function()
-                    stroke.Color = Color3.fromRGB(120, 0, 0)
+                    stroke.Color = Color3.fromRGB(0, 85, 255)
                 end)
 
                 return button, clicker, stroke
@@ -2899,7 +2899,7 @@ local function createGradientButton(parent, position, size, text)
     end)
 
     clicker.MouseLeave:Connect(function()
-        stroke.Color = Color3.fromRGB(120, 0, 0)
+        stroke.Color = Color3.fromRGB(0, 85, 255)
     end)
 
     return button, clicker, stroke
