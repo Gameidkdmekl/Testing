@@ -103,7 +103,7 @@ function module.init(fluentWindow)
     topImage.Name = "TopAsset"
     topImage.Size = UDim2.new(0.5, 0, 0.600000024, 0)
     topImage.AnchorPoint = Vector2.new(0.5, 0.5)
-    topImage.Position = UDim2.new(0.5, -484, 0.5, -183)
+    topImage.Position = UDim2.new(0.5, -230, 0.5, -71)
     topImage.BackgroundTransparency = 1
     topImage.Image = "rbxassetid://129932985103073"
     topImage.ZIndex = 2
