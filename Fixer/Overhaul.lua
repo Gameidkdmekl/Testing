@@ -1191,8 +1191,8 @@ end
                 label.Size = UDim2.new(1, 0, 1, 0)
                 label.BackgroundTransparency = 1
                 label.TextColor3 = Color3.fromRGB(255, 255, 255)
-                label.TextSize = 30
-                label.Font = Enum.Font.GothamMedium
+                label.TextSize = 16
+                label.Font = Enum.Font.GothamBold
                 label.Parent = button
 
                 local clicker = Instance.new("TextButton")
@@ -1219,7 +1219,7 @@ end
                 return button, clicker, stroke
             end
             
-            local buttonSize = 200
+            local buttonSize = 190
             if Options.RespawnButtonSizeInput and Options.RespawnButtonSizeInput.Value and tonumber(Options.RespawnButtonSizeInput.Value) then
                 buttonSize = tonumber(Options.RespawnButtonSizeInput.Value)
             end
@@ -1239,7 +1239,7 @@ end
 
  RespawnButtonSizeInput = Tabs.Main:AddInput("RespawnButtonSizeInput", {
     Title = "Button Size",
-    Default = "200",
+    Default = "190",
     Placeholder = "Enter size (150-400)",
     Numeric = true,
     Finished = false,
@@ -2075,7 +2075,7 @@ SpeedInput = MiscTab:AddInput("SpeedInput", {
 
 JumpPowerInput = MiscTab:AddInput("JumpPowerInput", {
     Title = "Player Jump",
-    Default = "3",
+    Default = "3.5",
     Placeholder = "",
     Numeric = true,
     Finished = true,
@@ -2147,7 +2147,7 @@ FovInput = MiscTab:AddInput("FovInput", {
     end
 })
 
-JumpPowerValue = 3
+JumpPowerValue = 3.5
 MaxJumpsValue = math.huge
 
 CurrentJumpCount = 0
@@ -2441,7 +2441,7 @@ CarryGUIToggle = MiscTab:AddToggle("CarryGUIToggle", {
 
 CarryButtonSizeInput = MiscTab:AddInput("CarryButtonSizeInput", {
     Title = "Carry Button Size",
-    Default = "200",
+    Default = "190",
     Placeholder = "Enter size (150-400)",
     Numeric = true,
     Finished = false,
@@ -2511,8 +2511,8 @@ local function createGradientButton(parent, position, size, text)
     label.Size = UDim2.new(1, 0, 1, 0)
     label.BackgroundTransparency = 1
     label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.TextSize = 30
-    label.Font = Enum.Font.GothamMedium
+    label.TextSize = 16
+    label.Font = Enum.Font.GothamBold
     label.Parent = button
 
     local clicker = Instance.new("TextButton")
@@ -2574,7 +2574,7 @@ local function toggleAutoCarryGUI()
         screenGui.ResetOnSpawn = false
         screenGui.Parent = CoreGui
         
-        local buttonSize = 200
+        local buttonSize = 190
         if Options.CarryButtonSizeInput and Options.CarryButtonSizeInput.Value and tonumber(Options.CarryButtonSizeInput.Value) then
             buttonSize = tonumber(Options.CarryButtonSizeInput.Value)
         end
@@ -2855,7 +2855,7 @@ local function createGradientButton(parent, position, size, text)
     label.BackgroundTransparency = 1
     label.TextColor3 = Color3.fromRGB(255, 255, 255)
     label.TextSize = 16
-    label.Font = Enum.Font.GothamMedium
+    label.Font = Enum.Font.GothamBold
     label.TextWrapped = true
     label.Parent = button
 
@@ -3355,7 +3355,7 @@ local function createGravityButton()
         screenGui.ResetOnSpawn = false
         screenGui.Parent = CoreGui
         
-        local buttonSize = 200
+        local buttonSize = 190
         local btnWidth = math.max(150, math.min(buttonSize, 400))
         local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
         
@@ -3679,7 +3679,7 @@ local function createBhopGradientButton()
     bhopButtonScreenGui.ResetOnSpawn = false
     bhopButtonScreenGui.Parent = CoreGui
     
-    local buttonSize = 200
+    local buttonSize = 190
     local btnWidth = math.max(150, math.min(buttonSize, 400))
     local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
     
@@ -3951,7 +3951,7 @@ local function createLagSwitchButton()
         screenGui.ResetOnSpawn = false
         screenGui.Parent = CoreGui
         
-        local buttonSize = 200
+        local buttonSize = 190
         local btnWidth = math.max(150, math.min(buttonSize, 400))
         local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
         
@@ -5617,4 +5617,4 @@ InfoTab:AddButton({
 
 Window:SelectTab(1)
 SaveManager:LoadAutoloadConfig()
-loadstring(game:HttpGet('https://raw.githubusercontent.com/Pnsdgsa/Script-kids/refs/heads/main/Scripthub/Darahub/evade/TimerGUI-NoRepeat'))()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/TimerGUI.lua'))()
