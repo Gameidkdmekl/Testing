@@ -8,7 +8,7 @@ local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/d
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 local Window = Fluent:CreateWindow({
     Title = "🎄Draconic-X-Remake🎄",
-    SubTitle = "Overhaul (1.1 Version) Made by Unknownproooolucky",
+    SubTitle = "Overhaul (1.2 Version) Made by Unknownproooolucky",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
     Acrylic = true,
@@ -125,7 +125,7 @@ function CreateBillboardESP(Name, Part, Color, TextSize)
     return BillboardGui
 end
 
-function UpdateBillboardESP(Name, Part, NameText, Color, TextSize)
+function UpdateBillboardESP(Name, Part, NameText, Color, TextSize, extraText)
     if not Part then return false end
 
     local esp = Part:FindFirstChild(Name)
@@ -142,7 +142,7 @@ function UpdateBillboardESP(Name, Part, NameText, Color, TextSize)
         
         local distance = getDistanceFromPlayer(Part.Position)
         local name = NameText or Part.Parent and Part.Parent.Name or Part.Name
-        label.Text = string.format("%s [%dm]", name, distance)
+        label.Text = string.format("%s | %d m%s", name, distance, extraText or "")
         
         return true
     end
@@ -215,14 +215,39 @@ local function scanForPlayers()
         if player ~= LocalPlayer and player.Character then
             local head = player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("HumanoidRootPart")
             if head then
+                -- Проверяем наличие папки Revives в персонаже игрока
+                local extraText = ""
+                local character = player.Character
+                if character and character:FindFirstChild("Revives") then
+                    extraText = " | revives"
+                end
+                
                 if not PlayerBillboards[player] then
                     local esp = CreateBillboardESP("PlayerESP", head, Color3.fromRGB(0, 255, 0), 14)
                     if esp then
-                        UpdateBillboardESP("PlayerESP", head, player.Name, Color3.fromRGB(0, 255, 0), 14)
+                        -- Обновляем ESP с новым форматом текста
+                        local distance = getDistanceFromPlayer(head.Position)
+                        local name = player.Name
+                        UpdateBillboardESP("PlayerESP", head, name, Color3.fromRGB(0, 255, 0), 14)
+                        
+                        -- Получаем метку и обновляем текст с учетом ревайвов
+                        if esp:FindFirstChildOfClass("TextLabel") then
+                            local label = esp:FindFirstChildOfClass("TextLabel")
+                            label.Text = string.format("%s | %d m%s", name, distance, extraText)
+                        end
+                        
                         PlayerBillboards[player] = esp
                     end
                 else
-                    UpdateBillboardESP("PlayerESP", head, player.Name, Color3.fromRGB(0, 255, 0), 14)
+                    -- Обновляем существующий ESP с новым форматом текста
+                    local distance = getDistanceFromPlayer(head.Position)
+                    local name = player.Name
+                    
+                    -- Получаем метку и обновляем текст с учетом ревайвов
+                    if PlayerBillboards[player] and PlayerBillboards[player]:FindFirstChildOfClass("TextLabel") then
+                        local label = PlayerBillboards[player]:FindFirstChildOfClass("TextLabel")
+                        label.Text = string.format("%s | %d m%s", name, distance, extraText)
+                    end
                 end
             end
         elseif PlayerBillboards[player] then
