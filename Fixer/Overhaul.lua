@@ -217,37 +217,37 @@ local function scanForPlayers()
             if head then
                 -- Проверяем наличие папки Revives в персонаже игрока
                 local extraText = ""
-                local character = player.Character
-                if character and character:FindFirstChild("Revives") then
+                local textColor = Color3.fromRGB(0, 255, 0) -- Зеленый по умолчанию
+                
+                if player.Character:FindFirstChild("Revives") then
                     extraText = " | revives"
-                    textColor = Color3.fromRGB(255, 255, 0)
+                    textColor = Color3.fromRGB(255, 255, 0) -- Желтый для ревайвов
                 end
                 
                 if not PlayerBillboards[player] then
-                    local esp = CreateBillboardESP("PlayerESP", head, Color3.fromRGB(0, 255, 0), 14)
+                    local esp = CreateBillboardESP("PlayerESP", head, textColor, 14)
                     if esp then
-                        -- Обновляем ESP с новым форматом текста
+                        -- Обновляем ESP вручную
                         local distance = getDistanceFromPlayer(head.Position)
                         local name = player.Name
-                        UpdateBillboardESP("PlayerESP", head, name, Color3.fromRGB(0, 255, 0), 14)
                         
-                        -- Получаем метку и обновляем текст с учетом ревайвов
                         if esp:FindFirstChildOfClass("TextLabel") then
                             local label = esp:FindFirstChildOfClass("TextLabel")
                             label.Text = string.format("%s | %d m%s", name, distance, extraText)
+                            label.TextColor3 = textColor
                         end
                         
                         PlayerBillboards[player] = esp
                     end
                 else
-                    -- Обновляем существующий ESP с новым форматом текста
+                    -- Обновляем существующий ESP
                     local distance = getDistanceFromPlayer(head.Position)
                     local name = player.Name
                     
-                    -- Получаем метку и обновляем текст с учетом ревайвов
                     if PlayerBillboards[player] and PlayerBillboards[player]:FindFirstChildOfClass("TextLabel") then
                         local label = PlayerBillboards[player]:FindFirstChildOfClass("TextLabel")
                         label.Text = string.format("%s | %d m%s", name, distance, extraText)
+                        label.TextColor3 = textColor
                     end
                 end
             end
