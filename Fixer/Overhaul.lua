@@ -114,7 +114,7 @@ function CreateBillboardESP(Name, Part, Color, TextSize)
     TextLabel.BackgroundTransparency = 1
     TextLabel.Size = UDim2.new(1, 0, 1, 0)
     TextLabel.TextScaled = false
-    TextLabel.Font = Enum.Font.SourceSansBold
+    TextLabel.Font = Enum.Font.GothamBold
     TextLabel.TextSize = TextSize or 14
     TextLabel.TextColor3 = Color or Color3.fromRGB(255, 255, 255)
 
@@ -1201,14 +1201,14 @@ end
 
                 local gradient = Instance.new("UIGradient")
                 gradient.Color = ColorSequence.new{
-                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 180)),
                     ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
                 }
                 gradient.Rotation = 45
                 gradient.Parent = button
 
                 local stroke = Instance.new("UIStroke")
-                stroke.Color = Color3.fromRGB(120, 0, 0)
+                stroke.Color = Color3.fromRGB(255, 255, 220)
                 stroke.Thickness = 2
                 stroke.Parent = button
 
@@ -2521,14 +2521,14 @@ local function createGradientButton(parent, position, size, text)
 
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 180)),
         ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
     }
     gradient.Rotation = 45
     gradient.Parent = button
 
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(120, 0, 0)
+    stroke.Color = Color3.fromRGB(255, 255, 220)
     stroke.Thickness = 2
     stroke.Parent = button
 
@@ -2864,14 +2864,14 @@ local function createGradientButton(parent, position, size, text)
 
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 180)),
         ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
     }
     gradient.Rotation = 45
     gradient.Parent = button
 
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(120, 0, 0)
+    stroke.Color = Color3.fromRGB(255, 255, 220)
     stroke.Thickness = 2
     stroke.Parent = button
 
