@@ -7,11 +7,11 @@ local gui, button, topImage, backgroundImage
 local audioDownloaded = false
 
 local function downloadAudio()
-    if audioDownloaded and isfile("bruh.mp3") then
+    if audioDownloaded and isfile("point1.mp3") then
         return true
     end
     
-    local audioUrl = "https://github.com/Nyxarth910/Draconic-Hub-X/raw/refs/heads/main/Files/audio/Bruh%20sound%20effect_256k.mp3"
+    local audioUrl = "https://github.com/Gameidkdmekl/Testing/raw/refs/heads/main/point1.mp3"
     local request = http_request or (syn and syn.request) or request
     
     local success, response = pcall(function()
@@ -19,7 +19,7 @@ local function downloadAudio()
     end)
     
     if success and response and response.Body and #response.Body > 1000 then
-        writefile("bruh.mp3", response.Body)
+        writefile("point1.mp3", response.Body)
         audioDownloaded = true
         return true
     else
@@ -29,7 +29,7 @@ local function downloadAudio()
 end
 
 local function playAudio()
-    if not isfile("bruh.mp3") then
+    if not isfile("point1.mp3") then
         if not downloadAudio() then
             warn("Audio file not found and download failed!")
             return nil
@@ -37,7 +37,7 @@ local function playAudio()
     end
     
     local sound = Instance.new("Sound")
-    sound.SoundId = getcustomasset("bruh.mp3")
+    sound.SoundId = getcustomasset("point1.mp3")
     sound.Volume = 1
     sound.Parent = game:GetService("SoundService")
     
