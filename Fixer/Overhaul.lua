@@ -220,6 +220,7 @@ local function scanForPlayers()
                 local character = player.Character
                 if character and character:FindFirstChild("Revives") then
                     extraText = " | revives"
+                    textColor = Color3.fromRGB(255, 255, 0)
                 end
                 
                 if not PlayerBillboards[player] then
