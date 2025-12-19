@@ -1201,14 +1201,14 @@ end
 
                 local gradient = Instance.new("UIGradient")
                 gradient.Color = ColorSequence.new{
-                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 180)),
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),
                     ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
                 }
                 gradient.Rotation = 45
                 gradient.Parent = button
 
                 local stroke = Instance.new("UIStroke")
-                stroke.Color = Color3.fromRGB(255, 255, 220)
+                stroke.Color = Color3.fromRGB(0, 85, 255)
                 stroke.Thickness = 2
                 stroke.Parent = button
 
@@ -2521,14 +2521,14 @@ local function createGradientButton(parent, position, size, text)
 
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 180)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),
         ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
     }
     gradient.Rotation = 45
     gradient.Parent = button
 
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(255, 255, 220)
+    stroke.Color = Color3.fromRGB(0, 85, 220)
     stroke.Thickness = 2
     stroke.Parent = button
 
@@ -2864,14 +2864,14 @@ local function createGradientButton(parent, position, size, text)
 
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 180)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),
         ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
     }
     gradient.Rotation = 45
     gradient.Parent = button
 
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(255, 255, 220)
+    stroke.Color = Color3.fromRGB(0, 85, 255)
     stroke.Thickness = 2
     stroke.Parent = button
 
