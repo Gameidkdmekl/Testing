@@ -5781,8 +5781,6 @@ EventTab:AddParagraph({
     Title = "Примечание",
     Content = "Эти функции изменяют отображение интерфейса Battlepass. Отключите их перед закрытием игры."
 })
-    end
-})
 
 local InfoTab = Window:AddTab({ Title = "Info", Icon = "help-circle" })
 
