@@ -160,7 +160,7 @@ local validKeys = {
 }
 
 -- Ссылка для кнопки Get Key (замени на свою)
-local keyLink = "https://link-target.net/2503123/zJ8GYL3F4XUi" -- ВСТАВЬ СВОЮ ССЫЛКУ ЗДЕСЬ!
+local keyLink = "https://link-center.net/2503123/jIXbefgnlUZ2" -- ВСТАВЬ СВОЮ ССЫЛКУ ЗДЕСЬ!
 
 -- Переменные для перетаскивания
 local dragging = false
