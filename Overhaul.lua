@@ -5622,7 +5622,7 @@ EventTab:AddSection("Battlepass Modifications")
 
 -- Первый тумблер: Unlocked Pass
 local UnlockedPassToggle = EventTab:AddToggle("UnlockedPassToggle", {
-    Title = "Hide Unlocked Pass",
+    Title = "Open Unlocked Pass",
     Default = false,
     Callback = function(state)
         if state then
@@ -5663,7 +5663,7 @@ local UnlockedPassToggle = EventTab:AddToggle("UnlockedPassToggle", {
 
 -- Второй тумблер: Exchange Open
 local ExchangeOpenToggle = EventTab:AddToggle("ExchangeOpenToggle", {
-    Title = "Open Exchange View",
+    Title = "Open Exchange",
     Default = false,
     Callback = function(state)
         if state then
@@ -5716,29 +5716,6 @@ EventTab:AddParagraph({
     Title = "Примечание",
     Content = "Эти функции изменяют отображение интерфейса Battlepass. Отключите их перед закрытием игры."
 })
-
--- Добавляем раздел с информацией о Telegram (как вы просили)
-EventTab:AddSection("Telegram Support")
-
-EventTab:AddParagraph({
-    Title = "Telegram Support",
-    Content = "Join our Telegram channel for updates and support"
-})
-
-EventTab:AddButton({
-    Title = "Copy Telegram Link",
-    Description = "Click to copy Telegram link to clipboard",
-    Callback = function()
-        local telegramLink = "https://t.me/DraconicHub"
-        
-        -- Копирование в буфер обмена
-        setclipboard(telegramLink)
-        
-        Fluent:Notify({
-            Title = "Telegram",
-            Content = "Link copied to clipboard!",
-            Duration = 3
-        })
     end
 })
 
