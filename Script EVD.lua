@@ -3,6 +3,39 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "DraconicHubGui"
 screenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 
+-- Настройки сохранения
+local DataStoreService = game:GetService("DataStoreService")
+local keyStore = DataStoreService:GetDataStore("DraconicHubKeys")
+local player = game:GetService("Players").LocalPlayer
+local userID = player.UserId
+local SAVE_KEY = "saved_key_" .. userID
+
+-- Функция для сохранения ключа
+local function saveKey(key)
+    local success, errorMsg = pcall(function()
+        keyStore:SetAsync(SAVE_KEY, key)
+    end)
+    if success then
+        print("Ключ сохранен: " .. key)
+        return true
+    else
+        warn("Ошибка сохранения ключа: " .. errorMsg)
+        return false
+    end
+end
+
+-- Функция для загрузки ключа
+local function loadKey()
+    local success, savedKey = pcall(function()
+        return keyStore:GetAsync(SAVE_KEY)
+    end)
+    if success and savedKey then
+        print("Загружен сохраненный ключ: " .. savedKey)
+        return savedKey
+    end
+    return nil
+end
+
 -- Главный контейнер (Красное окно) с ЧЕРНОЙ ЖИРНОЙ ОБВОДКОЙ
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
@@ -115,6 +148,21 @@ getKeyBtn.Parent = mainFrame
 local getKeyCorner = Instance.new("UICorner")
 getKeyCorner.CornerRadius = UDim.new(0, 20)
 getKeyCorner.Parent = getKeyBtn
+
+-- Кнопка Clear Saved Key
+local clearKeyBtn = Instance.new("TextButton")
+clearKeyBtn.Size = UDim2.new(0, 160, 0, 40) -- Новая кнопка
+clearKeyBtn.Position = UDim2.new(0.5, -80, 0, 290) -- Позиция под другими кнопками
+clearKeyBtn.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+clearKeyBtn.Text = "Clear Saved Key"
+clearKeyBtn.Font = Enum.Font.SourceSans
+clearKeyBtn.TextSize = 20
+clearKeyBtn.Visible = false -- Скрыта по умолчанию
+clearKeyBtn.Parent = mainFrame
+
+local clearKeyCorner = Instance.new("UICorner")
+clearKeyCorner.CornerRadius = UDim.new(0, 10)
+clearKeyCorner.Parent = clearKeyBtn
 
 -- Создаем сообщение об ошибке
 local errorLabel = Instance.new("TextLabel")
@@ -273,6 +321,22 @@ local function showMessage(text, color)
     errorLabel.Visible = false
 end
 
+-- Функция для очистки сохраненного ключа
+local function clearSavedKey()
+    local success, errorMsg = pcall(function()
+        keyStore:RemoveAsync(SAVE_KEY)
+    end)
+    if success then
+        clearKeyBtn.Visible = false
+        showMessage("Сохраненный ключ удален!", Color3.fromRGB(50, 150, 255))
+        return true
+    else
+        warn("Ошибка удаления ключа: " .. errorMsg)
+        showMessage("Ошибка удаления ключа!", Color3.fromRGB(255, 50, 50))
+        return false
+    end
+end
+
 -- Функция для запуска скрипта
 local function executeScript()
     -- Останавливаем анимацию лого
@@ -290,9 +354,49 @@ local function executeScript()
         -- Если скрипт не запустился, показываем интерфейс снова
         screenGui.Enabled = true
         rotationSpeed = 0.5 -- Возвращаем анимацию
-        showMessage(Color3.fromRGB(255, 50, 50), "Ошибка загрузки скрипта: " .. errorMsg)
+        showMessage("Ошибка загрузки скрипта: " .. errorMsg, Color3.fromRGB(255, 50, 50))
     end
 end
+
+-- Функция для проверки и автозапуска
+local function checkSavedKey()
+    local savedKey = loadKey()
+    if savedKey and isValidKey(savedKey) then
+        print("Обнаружен сохраненный ключ, запускаю автоматически...")
+        
+        -- Показываем сообщение об автоматическом запуске
+        errorLabel.Text = "Обнаружен сохраненный ключ, запускаю..."
+        errorLabel.TextColor3 = Color3.fromRGB(50, 255, 50)
+        errorLabel.Visible = true
+        
+        -- Меняем текст кнопки
+        submitBtn.Text = "Автозапуск..."
+        submitBtn.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
+        
+        -- Показываем кнопку очистки ключа
+        clearKeyBtn.Visible = true
+        
+        -- Увеличиваем скорость вращения лого при загрузке
+        rotationSpeed = 3
+        
+        -- Ждем немного для визуального эффекта
+        task.wait(2)
+        
+        -- Запускаем скрипт
+        executeScript()
+        return true
+    end
+    return false
+end
+
+-- Проверяем сохраненный ключ при запуске
+task.spawn(function()
+    task.wait(1) -- Ждем загрузки интерфейса
+    if not checkSavedKey() then
+        -- Если сохраненного ключа нет, показываем обычное сообщение
+        showMessage("Введите ключ для доступа к Draconic Hub X", Color3.fromRGB(255, 255, 255))
+    end
+end)
 
 --- Функционал кнопок ---
 
@@ -307,7 +411,15 @@ submitBtn.MouseButton1Click:Connect(function()
     print("Проверка ключа: " .. enteredKey)
     
     if isValidKey(enteredKey) then
-        showMessage("Ключ принят! Запускаю Draconic Hub...", Color3.fromRGB(50, 255, 50))
+        -- Сохраняем ключ
+        if saveKey(enteredKey) then
+            showMessage("Ключ принят и сохранен! Запускаю Draconic Hub...", Color3.fromRGB(50, 255, 50))
+        else
+            showMessage("Ключ принят! (Не удалось сохранить) Запускаю...", Color3.fromRGB(255, 200, 50))
+        end
+        
+        -- Показываем кнопку очистки ключа
+        clearKeyBtn.Visible = true
         
         -- Меняем текст кнопки
         submitBtn.Text = "Loading..."
@@ -350,6 +462,21 @@ end
 
 setupButtonHover(submitBtn)
 setupButtonHover(getKeyBtn)
+setupButtonHover(clearKeyBtn)
+
+-- Эффект наведения для кнопки очистки
+clearKeyBtn.MouseEnter:Connect(function()
+    clearKeyBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+end)
+
+clearKeyBtn.MouseLeave:Connect(function()
+    clearKeyBtn.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+end)
+
+-- Функционал кнопки очистки ключа
+clearKeyBtn.MouseButton1Click:Connect(function()
+    clearSavedKey()
+end)
 
 -- Эффект при наведении на лого
 logoContainer.MouseEnter:Connect(function()
@@ -412,12 +539,6 @@ userInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Информационное сообщение при запуске
-task.spawn(function()
-    task.wait(1)
-    showMessage("Введите ключ для доступа к Draconic Hub X", Color3.fromRGB(255, 255, 255))
-end)
-
 -- Автозаполнение для тестирования (можно удалить в финальной версии)
 keyInput.Focused:Connect(function()
     task.wait(0.5)
@@ -427,8 +548,16 @@ keyInput.Focused:Connect(function()
     end
 end)
 
+-- Показываем сохраненный ключ в поле ввода при наличии
+keyInput.FocusLost:Connect(function()
+    local savedKey = loadKey()
+    if savedKey and keyInput.Text == "" then
+        keyInput.Text = savedKey
+    end
+end)
+
 print("Draconic Hub X Key System загружен!")
 print("Используйте один из ключей: " .. table.concat(validKeys, ", "))
 print("Перетаскивайте меню за любую часть (кроме кнопок и полей ввода)")
 print("ESC - скрыть/показать меню")
-print("Анимированное лого загружено и вращается!")
+print("Система сохранения ключа активирована!")
