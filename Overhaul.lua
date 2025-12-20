@@ -262,87 +262,145 @@ end
 
 local function scanForTickets()
     local ticketsFound = {}
+local function scanForTickets()
+    -- Оптимизация: проверяем только если включено
+    if not Options.TicketToggle or not Options.TicketToggle.Value then
+        return
+    end
     
-    -- Оптимизированный поиск тикетов
-    local gameFolder = workspace:FindFirstChild("Game")
-    if gameFolder then
-        local effects = gameFolder:FindFirstChild("Effects")
-        if effects then
-            local tickets = effects:FindFirstChild("Tickets")
-            if tickets then
-                for _, ticket in pairs(tickets:GetChildren()) do
-                    if ticket:IsA("BasePart") then
-                        ticketsFound[ticket] = ticket
-                    elseif ticket:IsA("Model") then
-                        local primary = ticket:FindFirstChild("HumanoidRootPart") or 
-                                      ticket.PrimaryPart or
-                                      ticket:FindFirstChildWhichIsA("BasePart")
-                        if primary then
-                            ticketsFound[ticket] = primary
+    -- Оптимизация: кэшируем локальные переменные
+    local localPlayer = LocalPlayer
+    local character = localPlayer.Character
+    if not character then return end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    local currentTime = tick()
+    local ticketsFound = {}
+    
+    -- Оптимизация: обновляем поиск только раз в 0.3 секунды
+    if not featureStates.lastTicketScan or (currentTime - featureStates.lastTicketScan) > 0.3 then
+        featureStates.lastTicketScan = currentTime
+        
+        -- Быстрый поиск только в нужных местах (без GetDescendants)
+        local gameFolder = workspace:FindFirstChild("Game")
+        if gameFolder then
+            local effects = gameFolder:FindFirstChild("Effects")
+            if effects then
+                local tickets = effects:FindFirstChild("Tickets")
+                if tickets then
+                    for _, ticket in pairs(tickets:GetChildren()) do
+                        if ticket:IsA("BasePart") or ticket:IsA("Model") then
+                            local part = ticket:IsA("Model") and 
+                                       (ticket:FindFirstChild("HumanoidRootPart") or 
+                                        ticket.PrimaryPart or 
+                                        ticket:FindFirstChild("Head") or
+                                        ticket:FindFirstChildWhichIsA("BasePart")) or 
+                                       ticket
+                            if part then
+                                ticketsFound[ticket] = part
+                            end
                         end
                     end
                 end
             end
         end
-    end
-    
-    -- Упрощенный поиск в других местах
-    local ticketsRoot = workspace:FindFirstChild("Tickets")
-    if ticketsRoot then
-        for _, obj in pairs(ticketsRoot:GetChildren()) do
-            if obj:IsA("BasePart") then
-                ticketsFound[obj] = obj
-            elseif obj:IsA("Model") then
-                local primary = obj:FindFirstChild("HumanoidRootPart") or 
-                              obj.PrimaryPart or
-                              obj:FindFirstChildWhichIsA("BasePart")
-                if primary then
-                    ticketsFound[obj] = primary
+        
+        -- Дополнительный поиск в других местах (только если не нашли в основном)
+        if next(ticketsFound) == nil then
+            local ticketsRoot = workspace:FindFirstChild("Tickets")
+            if ticketsRoot then
+                for _, ticket in pairs(ticketsRoot:GetChildren()) do
+                    if ticket:IsA("BasePart") or ticket:IsA("Model") then
+                        local part = ticket:IsA("Model") and 
+                                   (ticket:FindFirstChild("HumanoidRootPart") or 
+                                    ticket.PrimaryPart or 
+                                    ticket:FindFirstChild("Head")) or 
+                                   ticket
+                        if part then
+                            ticketsFound[ticket] = part
+                        end
+                    end
                 end
             end
         end
+        
+        -- Кэшируем найденные тикеты
+        featureStates.cachedTickets = ticketsFound
+    else
+        -- Используем кэшированные тикеты
+        ticketsFound = featureStates.cachedTickets or {}
     end
     
-    -- УДАЛЕНО: Поиск по всему workspace (это вызывало лаги)
-    -- Вместо этого ищем только в ожидаемых местах
+    -- Ограничиваем количество одновременно отображаемых ESP (макс 20)
+    local espCount = 0
+    local maxEspCount = 20
     
-    -- Обновление ESP
+    -- Создаем/обновляем ESP только для ближайших тикетов
     for ticket, part in pairs(ticketsFound) do
-        if not TicketBillboards[ticket] then
-            local esp = CreateBillboardESP("TicketESP", part, Color3.fromRGB(255, 255, 0), 12)
-            if esp then
-                local distance = getDistanceFromPlayer(part.Position)
-                if esp:FindFirstChildOfClass("TextLabel") then
-                    local label = esp:FindFirstChildOfClass("TextLabel")
-                    label.Text = string.format("Ticket | %d m", distance)
-                end
-                TicketBillboards[ticket] = {esp = esp, part = part}
-            end
-        else
-            -- Обновляем только если ESP существует
-            local data = TicketBillboards[ticket]
-            if data and data.esp and data.esp.Parent then
-                local distance = getDistanceFromPlayer(part.Position)
-                if data.esp:FindFirstChildOfClass("TextLabel") then
-                    data.esp:FindFirstChildOfClass("TextLabel").Text = string.format("Ticket | %d m", distance)
+        if espCount >= maxEspCount then break end
+        
+        local distance = (humanoidRootPart.Position - part.Position).Magnitude
+        
+        -- Оптимизация: показываем ESP только на расстоянии до 200 метров
+        if distance <= 200 then
+            espCount = espCount + 1
+            
+            local billboardData = TicketBillboards[ticket]
+            
+            if not billboardData then
+                -- Создаем новое ESP
+                local esp = CreateBillboardESP("TicketESP", part, Color3.fromRGB(255, 215, 0), 12)
+                if esp then
+                    if esp:FindFirstChildOfClass("TextLabel") then
+                        local label = esp:FindFirstChildOfClass("TextLabel")
+                        label.Text = string.format("💰 %dm", math.floor(distance))
+                        label.TextColor3 = Color3.fromRGB(255, 215, 0)
+                    end
+                    TicketBillboards[ticket] = {
+                        esp = esp,
+                        part = part,
+                        lastUpdate = currentTime
+                    }
                 end
             else
+                -- Обновляем существующее ESP только раз в 0.5 секунды
+                if (currentTime - billboardData.lastUpdate) > 0.5 then
+                    if billboardData.esp and billboardData.esp:FindFirstChildOfClass("TextLabel") then
+                        local label = billboardData.esp:FindFirstChildOfClass("TextLabel")
+                        label.Text = string.format("💰 %dm", math.floor(distance))
+                        billboardData.lastUpdate = currentTime
+                    end
+                end
+                
+                -- Проверяем, что ESP все еще прикреплено к правильной части
+                if billboardData.esp and billboardData.esp.Parent ~= part then
+                    billboardData.esp:Destroy()
+                    TicketBillboards[ticket] = nil
+                end
+            end
+        else
+            -- Удаляем ESP для далеких тикетов
+            local billboardData = TicketBillboards[ticket]
+            if billboardData and billboardData.esp then
+                billboardData.esp:Destroy()
                 TicketBillboards[ticket] = nil
             end
         end
     end
     
-    -- Очистка удаленных тикетов
+    -- Оптимизированная очистка старых ESP
     for ticket, data in pairs(TicketBillboards) do
         if not ticketsFound[ticket] or not ticket.Parent then
-            if data and data.esp then
+            if data.esp then
                 data.esp:Destroy()
             end
             TicketBillboards[ticket] = nil
         end
     end
 end
-
+    
 -- ==================== TRACER ESP FUNCTIONS ====================
 
 function createTracerObject()
@@ -842,11 +900,16 @@ end)
 TicketToggle:OnChanged(function(value)
     if value then
         if not ticketLoop then
-            ticketLoop = RunService.RenderStepped:Connect(function()
+            ticketLoop = RunService.Heartbeat:Connect(function()
                 if Options.TicketToggle.Value then
                     scanForTickets()
                 end
             end)
+            
+            -- Инициализируем структуры для оптимизации
+            featureStates = featureStates or {}
+            featureStates.cachedTickets = {}
+            featureStates.lastTicketScan = 0
         end
     else
         if ticketLoop then
@@ -854,13 +917,19 @@ TicketToggle:OnChanged(function(value)
             ticketLoop = nil
         end
         
-        for ticket, esp in pairs(TicketBillboards) do
-            local part = ticket:IsA("Model") and ticket:FindFirstChild("Head") or ticket
-            if part then
-                DestroyBillboardESP("TicketESP", part)
+        -- Очищаем все ESP тикетов
+        for ticket, data in pairs(TicketBillboards) do
+            if data.esp then
+                data.esp:Destroy()
             end
         end
         TicketBillboards = {}
+        
+        -- Очищаем кэш
+        if featureStates then
+            featureStates.cachedTickets = nil
+            featureStates.lastTicketScan = nil
+        end
     end
 end)
 
