@@ -382,7 +382,7 @@ getKeyBtn.MouseButton1Click:Connect(function()
     local success = pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "Draconic Hub",
-            Text = "Открываю ссылку для получения ключа...",
+            Text = "Сыллка скопировано...",
             Duration = 3
         })
     end)
