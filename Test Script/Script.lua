@@ -5845,6 +5845,7 @@ local function createSimpleTimer()
     local RunService = game:GetService("RunService")
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
+    local UserInputService = game:GetService("UserInputService")
     
     -- Создаём GUI
     local screenGui = Instance.new("ScreenGui")
@@ -5861,12 +5862,74 @@ local function createSimpleTimer()
     frame.BorderSizePixel = 0
     frame.Parent = screenGui
     
+    -- Добавляем возможность перетаскивания
+    local dragging = false
+    local dragInput
+    local dragStart
+    local startPos
+    
+    -- Функция для начала перетаскивания
+    local function update(input)
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, 
+                                   startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+    
+    -- Обработчики событий для перетаскивания
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            
+            -- Подсветка при перетаскивании
+            frame.BackgroundTransparency = 0.5
+            
+            local connection
+            connection = input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                    frame.BackgroundTransparency = 0.7
+                    connection:Disconnect()
+                end
+            end)
+        end
+    end)
+    
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    
+    -- Обработка перемещения мыши/тача
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input == dragInput or input.UserInputType == Enum.UserInputType.Touch) then
+            update(input)
+        end
+    end)
+    
+    -- Уголки для красоты
     local uiCorner = Instance.new("UICorner")
     uiCorner.CornerRadius = UDim.new(0, 6)
     uiCorner.Parent = frame
     
+    -- Индикатор перетаскивания (небольшой маркер в углу)
+    local dragIndicator = Instance.new("Frame")
+    dragIndicator.Size = UDim2.new(0, 8, 0, 8)
+    dragIndicator.Position = UDim2.new(1, -10, 1, -10)
+    dragIndicator.BackgroundColor3 = Color3.new(1, 1, 1)
+    dragIndicator.BackgroundTransparency = 0.5
+    dragIndicator.BorderSizePixel = 0
+    dragIndicator.Parent = frame
+    
+    local indicatorCorner = Instance.new("UICorner")
+    indicatorCorner.CornerRadius = UDim.new(0, 2)
+    indicatorCorner.Parent = dragIndicator
+    
+    -- Тексты FPS и таймера
     local fpsText = Instance.new("TextLabel")
-    fpsText.Size = UDim2.new(1, 0, 0.5, 0)
+    fpsText.Size = UDim2.new(1, -10, 0.5, 0)
     fpsText.Position = UDim2.new(0, 5, 0, 0)
     fpsText.BackgroundTransparency = 1
     fpsText.TextColor3 = Color3.new(1, 1, 1)
@@ -5877,16 +5940,17 @@ local function createSimpleTimer()
     fpsText.Parent = frame
     
     local timerText = Instance.new("TextLabel")
-    timerText.Size = UDim2.new(1, 0, 0.5, 0)
+    timerText.Size = UDim2.new(1, -10, 0.5, 0)
     timerText.Position = UDim2.new(0, 5, 0.5, 0)
     timerText.BackgroundTransparency = 1
     timerText.TextColor3 = Color3.new(1, 1, 1)
     timerText.Font = Enum.Font.GothamBold
     timerText.TextSize = 14
     timerText.TextXAlignment = Enum.TextXAlignment.Left
-    timerText.Text = "Timer: 0h 0m 0s"
+    timerText.Text = "Client Time: 0h 0m 0s"
     timerText.Parent = frame
     
+    -- Таймер для обновления
     local startTime = tick()
     local frameCount = 0
     local lastUpdate = tick()
@@ -5916,6 +5980,26 @@ local function createSimpleTimer()
         timerText.Text = string.format("Client Time: %dh %dm %ds", hours, minutes, seconds)
     end)
     
+    -- Функция для изменения позиции (можно вызывать извне)
+    function screenGui:SetPosition(x, y)
+        frame.Position = UDim2.new(0, x, 0, y)
+    end
+    
+    -- Функция для скрытия/показа
+    function screenGui:SetVisible(visible)
+        screenGui.Enabled = visible
+    end
+    
+    -- Сохраняем позицию при перезапуске персонажа
+    LocalPlayer.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        -- Восстанавливаем GUI если он был удалён
+        if not screenGui or not screenGui.Parent then
+            screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+        end
+    end)
+    
+    print("Draconic Timer: Created with drag support!")
     return screenGui
 end
 
