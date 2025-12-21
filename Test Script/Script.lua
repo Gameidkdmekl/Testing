@@ -5860,9 +5860,7 @@ InfoTab:AddButton({
 
 Window:SelectTab(1)
 SaveManager:LoadAutoloadConfig()
-
--- ВМЕСТО ЭТОЙ СТРОКИ:
--- loadstring(game:HttpGet('https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/TimerGUI.lua'))()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/TimerGUI.lua'))()
 
 -- НА ЭТО (простой таймер):
 local function createSimpleTimer()
