@@ -5855,7 +5855,7 @@ local function createSimpleTimer()
     screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
     
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 120, 0, 40)
+    frame.Size = UDim2.new(0, 155, 0, 50)
     frame.Position = UDim2.new(0, 10, 0, 10)
     frame.BackgroundTransparency = 0.7
     frame.BackgroundColor3 = Color3.new(0, 0, 0)
@@ -5914,19 +5914,6 @@ local function createSimpleTimer()
     uiCorner.CornerRadius = UDim.new(0, 6)
     uiCorner.Parent = frame
     
-    -- Индикатор перетаскивания (небольшой маркер в углу)
-    local dragIndicator = Instance.new("Frame")
-    dragIndicator.Size = UDim2.new(0, 8, 0, 8)
-    dragIndicator.Position = UDim2.new(1, -10, 1, -10)
-    dragIndicator.BackgroundColor3 = Color3.new(1, 1, 1)
-    dragIndicator.BackgroundTransparency = 0.5
-    dragIndicator.BorderSizePixel = 0
-    dragIndicator.Parent = frame
-    
-    local indicatorCorner = Instance.new("UICorner")
-    indicatorCorner.CornerRadius = UDim.new(0, 2)
-    indicatorCorner.Parent = dragIndicator
-    
     -- Тексты FPS и таймера
     local fpsText = Instance.new("TextLabel")
     fpsText.Size = UDim2.new(1, -10, 0.5, 0)
@@ -5935,7 +5922,7 @@ local function createSimpleTimer()
     fpsText.TextColor3 = Color3.new(1, 1, 1)
     fpsText.Font = Enum.Font.GothamBold
     fpsText.TextSize = 14
-    fpsText.TextXAlignment = Enum.TextXAlignment.Left
+    fpsText.TextXAlignment = Enum.TextXAlignment.Center
     fpsText.Text = "FPS: 60"
     fpsText.Parent = frame
     
@@ -5946,7 +5933,7 @@ local function createSimpleTimer()
     timerText.TextColor3 = Color3.new(1, 1, 1)
     timerText.Font = Enum.Font.GothamBold
     timerText.TextSize = 14
-    timerText.TextXAlignment = Enum.TextXAlignment.Left
+    timerText.TextXAlignment = Enum.TextXAlignment.Center
     timerText.Text = "Client Time: 0h 0m 0s"
     timerText.Parent = frame
     
