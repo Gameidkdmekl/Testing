@@ -18,7 +18,8 @@ local Window = Fluent:CreateWindow({
 
 local FloatingButton = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/FlyBytton.lua",true))()
 FloatingButton.init(Window)
-
+-- Добавить эту переменную после создания Window
+local FPSTimerEnabled = true  -- Флаг для отслеживания состояния
 local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "home" })
 }
@@ -5669,12 +5670,6 @@ InterfaceManager:SetFolder("DraconicXEvade")
 InterfaceManager:BuildInterfaceSection(SettingsTab)
 
 SettingsTab:AddSection("Save Manager")
-SaveManager:SetLibrary(Fluent)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({})
-SaveManager:SetFolder("DraconicXEvade/Config")
-SaveManager:BuildConfigSection(SettingsTab)
-
 -- ==================== FPS TIMER SETTINGS ====================
 
 SettingsTab:AddSection("FPS Timer Settings")
@@ -5701,18 +5696,62 @@ local FPSTimerToggle = SettingsTab:AddToggle("FPSTimerToggle", {
     end
 })
 
--- Автоматически включаем таймер при загрузке сохранённых настроек
-task.spawn(function()
-    task.wait(1)
-    SaveManager:LoadAutoloadConfig()
-    
-    -- Если в настройках сохранено "включено", запускаем таймер
-    if Options.FPSTimerToggle and Options.FPSTimerToggle.Value then
+-- Кнопка для сброса таймера
+SettingsTab:AddButton({
+    Title = "Reset Timer",
+    Description = "Reset timer to 00:00:00",
+    Callback = function()
+        -- Сначала удаляем старый таймер
         pcall(function()
-            loadstring(game:HttpGet('https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/TimerGUI.lua'))()
+            local screenGui = game:GetService("CoreGui"):FindFirstChild("FPSTimerGUI")
+            if screenGui then
+                screenGui:Destroy()
+            end
         end)
+        
+        -- Если таймер включен, создаём новый
+        if Options.FPSTimerToggle and Options.FPSTimerToggle.Value then
+            pcall(function()
+                loadstring(game:HttpGet('https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/TimerGUI.lua'))()
+            end)
+        end
+        
+        Fluent:Notify({
+            Title = "FPS Timer",
+            Content = "Timer has been reset to 00:00:00",
+            Duration = 3
+        })
     end
-end)
+})
+
+SettingsTab:AddSection("Save Manager")
+SaveManager:SetLibrary(Fluent)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({})
+SaveManager:SetFolder("DraconicXEvade/Config")
+SaveManager:BuildConfigSection(SettingsTab)
+
+-- Функция для управления таймером при загрузке настроек
+local function manageTimerOnLoad()
+    -- Ждём немного чтобы все опции загрузились
+    task.wait(0.5)
+    
+    if Options.FPSTimerToggle then
+        if not Options.FPSTimerToggle.Value then
+            -- Если в настройках выключено, удаляем таймер
+            pcall(function()
+                local screenGui = game:GetService("CoreGui"):FindFirstChild("FPSTimerGUI")
+                if screenGui then
+                    screenGui:Destroy()
+                end
+            end)
+        end
+        -- Если включено - таймер уже запущен в конце скрипта
+    end
+end
+
+-- Запускаем после загрузки настроек
+task.spawn(manageTimerOnLoad)
 
 -- Добавляем новую вкладку Event, если её ещё нет
 local EventTab = Window:AddTab({ Title = "Event", Icon = "calendar" })
@@ -5844,3 +5883,4 @@ InfoTab:AddButton({
 
 Window:SelectTab(1)
 SaveManager:LoadAutoloadConfig()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/TimerGUI.lua'))()
