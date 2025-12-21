@@ -480,7 +480,7 @@ local function executeScript()
     
     local success, errorMsg = pcall(function()
         -- Загружаем скрипт хаба
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Overhaul.lua"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/Script.lua"))()
     end)
     
     if not success then
