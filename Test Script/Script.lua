@@ -5913,7 +5913,7 @@ local function createSimpleTimer()
         local minutes = math.floor((elapsed % 3600) / 60)
         local seconds = math.floor(elapsed % 60)
         
-        timerText.Text = string.format("Timer: %dh %dm %ds", hours, minutes, seconds)
+        timerText.Text = string.format("Client Time: %dh %dm %ds", hours, minutes, seconds)
     end)
     
     return screenGui
