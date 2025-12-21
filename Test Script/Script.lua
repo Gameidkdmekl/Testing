@@ -5675,9 +5675,43 @@ SaveManager:SetIgnoreIndexes({})
 SaveManager:SetFolder("DraconicXEvade/Config")
 SaveManager:BuildConfigSection(SettingsTab)
 
+-- ==================== FPS TIMER SETTINGS ====================
+
+SettingsTab:AddSection("FPS Timer Settings")
+
+local FPSTimerToggle = SettingsTab:AddToggle("FPSTimerToggle", {
+    Title = "Show FPS Timer",
+    Description = "Display FPS and session timer overlay",
+    Default = true,
+    Callback = function(state)
+        if state then
+            -- Включаем таймер
+            pcall(function()
+                loadstring(game:HttpGet('https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/TimerGUI.lua'))()
+            end)
+        else
+            -- Выключаем таймер
+            pcall(function()
+                local screenGui = game:GetService("CoreGui"):FindFirstChild("FPSTimerGUI")
+                if screenGui then
+                    screenGui:Destroy()
+                end
+            end)
+        end
+    end
+})
+
+-- Автоматически включаем таймер при загрузке сохранённых настроек
 task.spawn(function()
     task.wait(1)
     SaveManager:LoadAutoloadConfig()
+    
+    -- Если в настройках сохранено "включено", запускаем таймер
+    if Options.FPSTimerToggle and Options.FPSTimerToggle.Value then
+        pcall(function()
+            loadstring(game:HttpGet('https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/TimerGUI.lua'))()
+        end)
+    end
 end)
 
 -- Добавляем новую вкладку Event, если её ещё нет
@@ -5810,4 +5844,3 @@ InfoTab:AddButton({
 
 Window:SelectTab(1)
 SaveManager:LoadAutoloadConfig()
-loadstring(game:HttpGet('https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/TimerGUI.lua'))()
