@@ -5598,9 +5598,46 @@ player.CharacterAdded:Connect(function(character)
     end
 end)
 
+
+})
+
+-- ==================== ТАЙМЕР FPS НАСТРОЙКА ====================
+
 local SettingsTab = Window:AddTab({ Title = "Settings", Icon = "settings" })
 
 SettingsTab:AddSection("Configuration")
+
+-- Тумблер для отображения FPS таймера
+local FPSTimerToggle = SettingsTab:AddToggle("FPSTimerToggle", {
+    Title = "Show FPS Timer",
+    Description = "Show/Hide FPS timer overlay",
+    Default = true,  -- По умолчанию включено
+    Callback = function(state)
+        if state then
+            -- Включаем таймер
+            if not FPSTimerEnabled then
+                loadstring(game:HttpGet('https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/TimerGUI.lua'))()
+                FPSTimerEnabled = true
+            end
+        else
+            -- Отключаем таймер
+            if FPSTimerEnabled then
+                -- Ищем и скрываем GUI таймера
+                pcall(function()
+                    local screenGui = game:GetService("CoreGui"):FindFirstChild("FPSTimerGUI")
+                    if screenGui then
+                        screenGui.Enabled = false
+                        screenGui:Destroy()
+                    end
+                end)
+                FPSTimerEnabled = false
+            end
+        end
+    end
+})
+
+-- Сохраняем состояние для использования в других местах кода
+local FPSTimerEnabled = true
 
 SettingsTab:AddButton({
     Title = "Save Configuration",
@@ -5620,6 +5657,10 @@ SettingsTab:AddButton({
     Description = "Load settings from config file",
     Callback = function()
         SaveManager:Load()
+        -- После загрузки применяем состояние таймера
+        if Options.FPSTimerToggle then
+            Options.FPSTimerToggle:SetValue(FPSTimerEnabled)
+        end
         Fluent:Notify({
             Title = "Settings",
             Content = "Configuration loaded successfully!",
@@ -5640,6 +5681,10 @@ SettingsTab:AddButton({
                     Title = "Confirm",
                     Callback = function()
                         SaveManager:Reset()
+                        FPSTimerEnabled = true
+                        if Options.FPSTimerToggle then
+                            Options.FPSTimerToggle:SetValue(true)
+                        end
                         Fluent:Notify({
                             Title = "Settings",
                             Content = "Configuration reset to default!",
@@ -5675,9 +5720,30 @@ SaveManager:SetIgnoreIndexes({})
 SaveManager:SetFolder("DraconicXEvade/Config")
 SaveManager:BuildConfigSection(SettingsTab)
 
+-- Автозагрузка конфигурации
 task.spawn(function()
     task.wait(1)
     SaveManager:LoadAutoloadConfig()
+    
+    -- После загрузки конфига применяем настройку таймера
+    if Options.FPSTimerToggle then
+        if Options.FPSTimerToggle.Value then
+            if not FPSTimerEnabled then
+                loadstring(game:HttpGet('https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/TimerGUI.lua'))()
+                FPSTimerEnabled = true
+            end
+        else
+            -- Скрываем таймер если он выключен в настройках
+            pcall(function()
+                local screenGui = game:GetService("CoreGui"):FindFirstChild("FPSTimerGUI")
+                if screenGui then
+                    screenGui.Enabled = false
+                    screenGui:Destroy()
+                end
+            end)
+            FPSTimerEnabled = false
+        end
+    end
 end)
 
 -- Добавляем новую вкладку Event, если её ещё нет
