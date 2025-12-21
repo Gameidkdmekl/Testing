@@ -5630,28 +5630,6 @@ local FPSTimerToggle = SettingsTab:AddToggle("FPSTimerToggle", {
     end
 })
 
--- Кнопка сброса
-SettingsTab:AddButton({
-    Title = "Reset Timer",
-    Description = "Reset timer to 00:00:00",
-    Callback = function()
-        local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
-        local timerGUI = PlayerGui:FindFirstChild("DraconicFPS")
-        
-        if timerGUI then
-            timerGUI:Destroy()
-        end
-        
-        createSimpleTimer()
-        
-        Fluent:Notify({
-            Title = "Timer Reset",
-            Content = "Timer has been reset to 00:00:00",
-            Duration = 3
-        })
-    end
-})
-
 SettingsTab:AddButton({
     Title = "Save Configuration",
     Description = "Save current settings to config file",
