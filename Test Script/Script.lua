@@ -5602,6 +5602,56 @@ local SettingsTab = Window:AddTab({ Title = "Settings", Icon = "settings" })
 
 SettingsTab:AddSection("Configuration")
 
+-- ==================== FPS TIMER SETTINGS ====================
+
+SettingsTab:AddSection("FPS Timer Settings")
+
+local FPSTimerToggle = SettingsTab:AddToggle("FPSTimerToggle", {
+    Title = "Show FPS Timer",
+    Description = "Display FPS and session timer",
+    Default = true,
+    Callback = function(state)
+        local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+        local timerGUI = PlayerGui:FindFirstChild("DraconicFPS")
+        
+        if state then
+            -- Включаем
+            if not timerGUI then
+                createSimpleTimer()
+            else
+                timerGUI.Enabled = true
+            end
+        else
+            -- Выключаем
+            if timerGUI then
+                timerGUI.Enabled = false
+            end
+        end
+    end
+})
+
+-- Кнопка сброса
+SettingsTab:AddButton({
+    Title = "Reset Timer",
+    Description = "Reset timer to 00:00:00",
+    Callback = function()
+        local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+        local timerGUI = PlayerGui:FindFirstChild("DraconicFPS")
+        
+        if timerGUI then
+            timerGUI:Destroy()
+        end
+        
+        createSimpleTimer()
+        
+        Fluent:Notify({
+            Title = "Timer Reset",
+            Content = "Timer has been reset to 00:00:00",
+            Duration = 3
+        })
+    end
+})
+
 SettingsTab:AddButton({
     Title = "Save Configuration",
     Description = "Save current settings to config file",
@@ -5810,4 +5860,88 @@ InfoTab:AddButton({
 
 Window:SelectTab(1)
 SaveManager:LoadAutoloadConfig()
-loadstring(game:HttpGet('https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/TimerGUI.lua'))()
+
+-- ВМЕСТО ЭТОЙ СТРОКИ:
+-- loadstring(game:HttpGet('https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/TimerGUI.lua'))()
+
+-- НА ЭТО (простой таймер):
+local function createSimpleTimer()
+    local RunService = game:GetService("RunService")
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    
+    -- Создаём GUI
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "DraconicFPS"
+    screenGui.ResetOnSpawn = false
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 120, 0, 40)
+    frame.Position = UDim2.new(0, 10, 0, 10)
+    frame.BackgroundTransparency = 0.7
+    frame.BackgroundColor3 = Color3.new(0, 0, 0)
+    frame.BorderSizePixel = 0
+    frame.Parent = screenGui
+    
+    local uiCorner = Instance.new("UICorner")
+    uiCorner.CornerRadius = UDim.new(0, 6)
+    uiCorner.Parent = frame
+    
+    local fpsText = Instance.new("TextLabel")
+    fpsText.Size = UDim2.new(1, 0, 0.5, 0)
+    fpsText.Position = UDim2.new(0, 5, 0, 0)
+    fpsText.BackgroundTransparency = 1
+    fpsText.TextColor3 = Color3.new(1, 1, 1)
+    fpsText.Font = Enum.Font.GothamBold
+    fpsText.TextSize = 14
+    fpsText.TextXAlignment = Enum.TextXAlignment.Left
+    fpsText.Text = "FPS: 60"
+    fpsText.Parent = frame
+    
+    local timerText = Instance.new("TextLabel")
+    timerText.Size = UDim2.new(1, 0, 0.5, 0)
+    timerText.Position = UDim2.new(0, 5, 0.5, 0)
+    timerText.BackgroundTransparency = 1
+    timerText.TextColor3 = Color3.new(1, 1, 1)
+    timerText.Font = Enum.Font.GothamBold
+    timerText.TextSize = 14
+    timerText.TextXAlignment = Enum.TextXAlignment.Left
+    timerText.Text = "Timer: 0h 0m 0s"
+    timerText.Parent = frame
+    
+    local startTime = tick()
+    local frameCount = 0
+    local lastUpdate = tick()
+    local currentFPS = 0
+    
+    -- Обновление
+    RunService.RenderStepped:Connect(function()
+        frameCount = frameCount + 1
+        
+        local currentTime = tick()
+        
+        -- Обновляем FPS
+        if currentTime - lastUpdate >= 0.5 then
+            currentFPS = math.floor(frameCount / (currentTime - lastUpdate))
+            frameCount = 0
+            lastUpdate = currentTime
+            
+            fpsText.Text = "FPS: " .. currentFPS
+        end
+        
+        -- Обновляем таймер
+        local elapsed = currentTime - startTime
+        local hours = math.floor(elapsed / 3600)
+        local minutes = math.floor((elapsed % 3600) / 60)
+        local seconds = math.floor(elapsed % 60)
+        
+        timerText.Text = string.format("Timer: %dh %dm %ds", hours, minutes, seconds)
+    end)
+    
+    return screenGui
+end
+
+-- Автоматически создаём таймер
+createSimpleTimer()
