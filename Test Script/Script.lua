@@ -3269,13 +3269,14 @@ ResetEmoteSpeedButton = MiscTab:AddButton({
     end
 })
 
+
+-- ==================== SPRINT SLIDE (Infinite Slide) ====================
 local infiniteSlideEnabled = false
 local slideFrictionValue = -8
 local movementTables = {}
-local infiniteSlideHeartbeat = nil
-local infiniteSlideCharacterConn = nil
-local RunService = game:GetService("RunService")
+local infiniteSlideConnection = nil
 local player = game:GetService("Players").LocalPlayer
+local RunService = game:GetService("RunService")
 
 local requiredKeys = {
     "Friction","AirStrafeAcceleration","JumpHeight","RunDeaccel",
@@ -3283,128 +3284,146 @@ local requiredKeys = {
     "BhopEnabled","Speed","AirAcceleration","RunAccel","SprintAcceleration"
 }
 
-local function hasRequiredFields(tbl)
-    if typeof(tbl) ~= "table" then return false end
-    for _, key in ipairs(requiredKeys) do
-        if rawget(tbl, key) == nil then return false end
-    end
-    return true
-end
+local lastFrictionValue = 5 -- Запоминаем последнее значение
 
 local function findMovementTables()
+    -- Не ищем снова, если уже нашли
+    if #movementTables > 0 then
+        return true
+    end
+    
     movementTables = {}
+    local count = 0
+    local maxSearch = 100 -- Ограничиваем поиск для оптимизации
+    
     for _, obj in ipairs(getgc(true)) do
-        if hasRequiredFields(obj) then
-            table.insert(movementTables, obj)
+        if count >= maxSearch then break end
+        
+        if typeof(obj) == "table" then
+            local hasAll = true
+            for _, key in ipairs(requiredKeys) do
+                if rawget(obj, key) == nil then
+                    hasAll = false
+                    break
+                end
+            end
+            
+            if hasAll then
+                table.insert(movementTables, obj)
+                count = count + 1
+            end
         end
     end
+    
     return #movementTables > 0
 end
 
 local function setSlideFriction(value)
-    local appliedCount = 0
-    for _, tbl in ipairs(movementTables) do
-        pcall(function()
-            tbl.Friction = value
-            appliedCount = appliedCount + 1
-        end)
+    -- Если значение не изменилось, не обновляем (оптимизация)
+    if lastFrictionValue == value then
+        return
     end
-    if appliedCount == 0 then
-        for _, obj in ipairs(getgc(true)) do
-            if hasRequiredFields(obj) then
+    
+    lastFrictionValue = value
+    
+    -- Применяем трение только к актуальным таблицам
+    if #movementTables > 0 then
+        for _, tbl in ipairs(movementTables) do
+            if tbl and typeof(tbl) == "table" and rawget(tbl, "Friction") then
                 pcall(function()
-                    obj.Friction = value
+                    tbl.Friction = value
                 end)
             end
         end
     end
 end
 
+local cachedPlayerModel = nil
+local lastModelCheck = 0
+
 local function updatePlayerModel()
+    local currentTime = tick()
+    
+    -- Кэшируем на 0.2 секунды для оптимизации
+    if cachedPlayerModel and cachedPlayerModel.Parent and currentTime - lastModelCheck < 0.2 then
+        return cachedPlayerModel
+    end
+    
     local gameFolder = workspace:FindFirstChild("Game")
-    if not gameFolder then return false end
+    if not gameFolder then 
+        cachedPlayerModel = nil
+        return nil 
+    end
     
     local playersFolder = gameFolder:FindFirstChild("Players")
-    if not playersFolder then return false end
-    
-    local playerModel = playersFolder:FindFirstChild(player.Name)
-    return playerModel
-end
-
-local function infiniteSlideHeartbeatFunc()
-    if not infiniteSlideEnabled then return end
-    
-    local playerModel = updatePlayerModel()
-    if not playerModel then return end
-    
-    local state = playerModel:GetAttribute("State")
-    
-    if state == "Slide" then
-        pcall(function()
-            playerModel:SetAttribute("State", "EmotingSlide")
-        end)
-    elseif state == "EmotingSlide" then
-        setSlideFriction(slideFrictionValue)
-    else
-        setSlideFriction(5)
-    end
-end
-
-local function onCharacterAddedSlide(character)
-    if not infiniteSlideEnabled then return end
-    
-    for i = 1, 5 do
-        task.wait(0.5)
-        if updatePlayerModel() then
-            break
-        end
+    if not playersFolder then 
+        cachedPlayerModel = nil
+        return nil 
     end
     
-    task.wait(0.5)
-    findMovementTables()
-end
-
-local function setInfiniteSlide(enabled)
-    infiniteSlideEnabled = enabled
-
-    if enabled then
-        findMovementTables()
-        updatePlayerModel()
-        
-        if not infiniteSlideCharacterConn then
-            infiniteSlideCharacterConn = player.CharacterAdded:Connect(onCharacterAddedSlide)
-        end
-        
-        if player.Character then
-            task.spawn(function()
-                onCharacterAddedSlide(player.Character)
-            end)
-        end
-        
-        if infiniteSlideHeartbeat then infiniteSlideHeartbeat:Disconnect() end
-        infiniteSlideHeartbeat = RunService.Heartbeat:Connect(infiniteSlideHeartbeatFunc)
-        
-    else
-        if infiniteSlideHeartbeat then
-            infiniteSlideHeartbeat:Disconnect()
-            infiniteSlideHeartbeat = nil
-        end
-        
-        if infiniteSlideCharacterConn then
-            infiniteSlideCharacterConn:Disconnect()
-            infiniteSlideCharacterConn = nil
-        end
-        
-        setSlideFriction(5)
-        movementTables = {}
-    end
+    cachedPlayerModel = playersFolder:FindFirstChild(player.Name)
+    lastModelCheck = currentTime
+    
+    return cachedPlayerModel
 end
 
 InfiniteSlideToggle = MiscTab:AddToggle("InfiniteSlideToggle", {
     Title = "Sprint Slide",
     Default = false,
     Callback = function(Value)
-        setInfiniteSlide(Value)
+        infiniteSlideEnabled = Value
+        
+        if Value then
+            -- Запускаем оптимизированный бесконечный слайд
+            task.spawn(function()
+                -- Инициализация таблиц только один раз при запуске
+                findMovementTables()
+                
+                -- Используем Heartbeat с оптимизированными задержками
+                local lastUpdate = tick()
+                local slideHeartbeat = RunService.Heartbeat:Connect(function()
+                    if not infiniteSlideEnabled then
+                        slideHeartbeat:Disconnect()
+                        setSlideFriction(5)
+                        return
+                    end
+                    
+                    -- Оптимизация: обновляем не каждый кадр, а каждые 0.05 секунды
+                    local currentTime = tick()
+                    if currentTime - lastUpdate < 0.05 then
+                        return
+                    end
+                    lastUpdate = currentTime
+                    
+                    local playerModel = updatePlayerModel()
+                    if not playerModel then return end
+                    
+                    local state = playerModel:GetAttribute("State")
+                    
+                    if state == "Slide" then
+                        pcall(function()
+                            playerModel:SetAttribute("State", "EmotingSlide")
+                        end)
+                        setSlideFriction(slideFrictionValue)
+                    elseif state == "EmotingSlide" then
+                        setSlideFriction(slideFrictionValue)
+                    else
+                        setSlideFriction(5)
+                    end
+                end)
+                
+                -- Сохраняем ссылку на соединение для отключения
+                infiniteSlideConnection = slideHeartbeat
+                
+            end)
+        else
+            -- Отключаем при выключении
+            if infiniteSlideConnection then
+                infiniteSlideConnection:Disconnect()
+                infiniteSlideConnection = nil
+            end
+            setSlideFriction(5)
+        end
     end
 })
 
@@ -3423,8 +3442,9 @@ SlideFrictionInput = MiscTab:AddInput("SlideFrictionInput", {
         end
     end
 })
+
 MiscTab:AddParagraph({
-    Title = "",
+    Title = "Heads up: Turn off infinite slide when bhopping to get better trims blah blah blah",
     Content = ""
 })
 
