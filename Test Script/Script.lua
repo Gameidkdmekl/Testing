@@ -787,17 +787,51 @@ end)
 
 PlayerToggle:OnChanged(function(value)
     if value then
-        -- Запускаем внешний ESP скрипт при включении
-        if not PlayerESPScript then
+        -- Включаем ESP - загружаем скрипт
+        if not ESPRunning then
+            ESPRunning = true
+            -- Сохраняем ссылку на загруженный скрипт
             PlayerESPScript = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Test%20Script/Esp.lua"))()
         end
     else
-        -- Останавливаем ESP скрипт при выключении
-        -- Примечание: внешний скрипт должен иметь свою систему отключения
-        -- Если в скрипте нет функции отключения, можно просто перезагрузить игру или использовать другие методы
+        -- Выключаем ESP - принудительно очищаем
+        ESPRunning = false
         
-        -- Если внешний ESP имеет функцию отключения, вызываем её
-        -- Например: if PlayerESPScript and PlayerESPScript.Stop then PlayerESPScript.Stop() end
+        -- Способ 1: Удаляем все Drawing объекты (самый эффективный для ESP)
+        pcall(function()
+            for _, obj in pairs(game:GetService("Players").LocalPlayer.PlayerGui:GetChildren()) do
+                if obj:IsA("Drawing") then
+                    obj:Remove()
+                end
+            end
+        end)
+        
+        -- Способ 2: Удаляем все BillboardGui (если ESP использует их)
+        pcall(function()
+            for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+                if player.Character then
+                    for _, part in pairs(player.Character:GetDescendants()) do
+                        if part:IsA("BillboardGui") and part.Name:find("ESP") then
+                            part:Destroy()
+                        end
+                    end
+                end
+            end
+        end)
+        
+        -- Способ 3: Удаляем все объекты с именем ESP
+        pcall(function()
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj.Name:find("ESP") or obj.Name:find("Esp") then
+                    obj:Destroy()
+                end
+            end
+        end)
+        
+        -- Способ 4: Перезагрузить локального игрока (радикальный, но работает)
+        pcall(function()
+            game:GetService("Players").LocalPlayer.Character:BreakJoints()
+        end)
         
         PlayerESPScript = nil
     end
