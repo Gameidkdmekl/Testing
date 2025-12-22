@@ -790,25 +790,47 @@ end)
 
 PlayerToggle:OnChanged(function(value)
     if value then
-        if not playerLoop then
-            playerLoop = RunService.RenderStepped:Connect(function()
-                if Options.PlayerToggle.Value then
-                    scanForPlayers()
-                end
+        -- Загружаем внешний ESP при включении
+        if not ExternalESPLoaded then
+            local success, errorMsg = pcall(function()
+                -- Загружаем внешний ESP
+                ExternalESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Test%20Script/Esp.lua"))()
+                ExternalESPLoaded = true
+                Fluent:Notify({
+                    Title = "ESP Players",
+                    Content = "External ESP loaded successfully!",
+                    Duration = 3
+                })
             end)
-        end
-    else
-        if playerLoop then
-            playerLoop:Disconnect()
-            playerLoop = nil
-        end
-        
-        for player, esp in pairs(PlayerBillboards) do
-            if player.Character then
-                DestroyBillboardESP("PlayerESP", player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("HumanoidRootPart"))
+            
+            if not success then
+                Fluent:Notify({
+                    Title = "ESP Players Error",
+                    Content = "Failed to load external ESP: " .. tostring(errorMsg),
+                    Duration = 5
+                })
+                Options.PlayerToggle:Set(false)
             end
         end
-        PlayerBillboards = {}
+    else
+        -- Отключаем внешний ESP
+        if ExternalESP and ExternalESPLoaded then
+            -- Если внешний ESP имеет функцию отключения, вызываем её
+            if type(ExternalESP) == "function" then
+                -- Попробуем найти функцию disable в глобальной области
+                if _G.DisableESP then
+                    pcall(_G.DisableESP)
+                end
+            end
+            ExternalESP = nil
+            ExternalESPLoaded = false
+            
+            Fluent:Notify({
+                Title = "ESP Players",
+                Content = "External ESP disabled!",
+                Duration = 3
+            })
+        end
     end
 end)
 
@@ -5982,3 +6004,12 @@ end
 
 -- Автоматически создаём таймер
 createSimpleTimer()
+-- Очистка при выходе из игры
+game:GetService("Players").PlayerRemoving:Connect(function(player)
+    if player == LocalPlayer then
+        -- Отключаем внешний ESP при выходе
+        if ExternalESPLoaded and _G.DisableESP then
+            pcall(_G.DisableESP)
+        end
+    end
+end)
