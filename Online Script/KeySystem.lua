@@ -481,6 +481,7 @@ local function executeScript()
     local success, errorMsg = pcall(function()
         -- Загружаем скрипт хаба
         loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/Script.lua"))()
+        game:GetService("Players").LocalPlayer.PlayerGui.DraconicHubGui:Destroy()
     end)
     
     if not success then
