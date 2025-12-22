@@ -215,104 +215,44 @@ local function scanForNextbots()
 end
 
 local function scanForTickets()
-    -- ↓ ДОБАВЛЕНО: Инициализация таблицы найденных тикетов
-    local ticketsFound = {}
-    
-    -- ↓ ИЗМЕНЕНО: Основной путь поиска расширен
-    local gameFolder = workspace:FindFirstChild("Game")
-    if gameFolder then
-        local effects = gameFolder:FindFirstChild("Effects")
-        if effects then
-            local tickets = effects:FindFirstChild("Tickets")
-            if tickets then
-                for _, ticket in pairs(tickets:GetChildren()) do
-                    if ticket:IsA("BasePart") or ticket:IsA("Model") then
-                        -- ↓ ИЗМЕНЕНО: Улучшен поиск части для Model
-                        local part = ticket:IsA("Model") and 
-                                   (ticket:FindFirstChild("HumanoidRootPart") or 
-                                    ticket:FindFirstChild("Head") or 
-                                    ticket.PrimaryPart or 
-                                    ticket:FindFirstChildWhichIsA("BasePart")) or 
-                                   ticket:IsA("BasePart") and ticket
-                        if part then
-                            -- ↓ ИЗМЕНЕНО: Сохраняем в ticketsFound вместо немедленного создания ESP
-                            ticketsFound[ticket] = part
+    -- Если включен внешний Ticket ESP, используем его
+    if ExternalTicketESPLoaded and _G.UpdateTicketESP then
+        pcall(_G.UpdateTicketESP)
+    else
+        -- Стандартная логика (резервная)
+        local ticketsFound = {}
+        
+        local gameFolder = workspace:FindFirstChild("Game")
+        if gameFolder then
+            local effects = gameFolder:FindFirstChild("Effects")
+            if effects then
+                local tickets = effects:FindFirstChild("Tickets")
+                if tickets then
+                    for _, ticket in pairs(tickets:GetChildren()) do
+                        if ticket:IsA("BasePart") or ticket:IsA("Model") then
+                            local part = ticket:IsA("Model") and 
+                                       (ticket:FindFirstChild("HumanoidRootPart") or 
+                                        ticket:FindFirstChild("Head") or 
+                                        ticket.PrimaryPart or 
+                                        ticket:FindFirstChildWhichIsA("BasePart")) or 
+                                       ticket:IsA("BasePart") and ticket
+                            if part then
+                                ticketsFound[ticket] = part
+                            end
                         end
                     end
                 end
             end
         end
-    end
-    
-    -- ↓ ДОБАВЛЕНО: Дополнительный поиск в других местах
-    local ticketsRoot = workspace:FindFirstChild("Tickets")
-    if ticketsRoot then
-        for _, ticket in pairs(ticketsRoot:GetChildren()) do
-            if ticket:IsA("BasePart") or ticket:IsA("Model") then
-                local part = ticket:IsA("Model") and 
-                           (ticket:FindFirstChild("HumanoidRootPart") or 
-                            ticket:FindFirstChild("Head") or 
-                            ticket.PrimaryPart or 
-                            ticket:FindFirstChildWhichIsA("BasePart")) or 
-                           ticket:IsA("BasePart") and ticket
-                if part then
-                    ticketsFound[ticket] = part
+        
+        -- Очистка старых ESP
+        for ticket, data in pairs(TicketBillboards) do
+            if not ticketsFound[ticket] or not ticket.Parent then
+                if data.esp then
+                    data.esp:Destroy()
                 end
+                TicketBillboards[ticket] = nil
             end
-        end
-    end
-    
-    -- ↓ ДОБАВЛЕНО: Общий поиск по всему workspace
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if (obj.Name:lower():find("ticket") or obj.Name:lower():find("coin")) 
-           and (obj:IsA("BasePart") or obj:IsA("Model")) then
-            if not ticketsFound[obj] then
-                local part = obj:IsA("Model") and 
-                           (obj:FindFirstChild("HumanoidRootPart") or 
-                            obj:FindFirstChild("Head") or 
-                            obj.PrimaryPart or 
-                            obj:FindFirstChildWhichIsA("BasePart")) or 
-                           obj:IsA("BasePart") and obj
-                if part then
-                    ticketsFound[obj] = part
-                end
-            end
-        end
-    end
-    
-    -- ↓ ИЗМЕНЕНО: Улучшенное создание/обновление ESP
-    for ticket, part in pairs(ticketsFound) do
-        if not TicketBillboards[ticket] then
-            local esp = CreateBillboardESP("TicketESP", part, Color3.fromRGB(255, 255, 0), 12)
-            if esp then
-                -- ↓ ИЗМЕНЕНО: Прямое обновление текста
-                local distance = getDistanceFromPlayer(part.Position)
-                if esp:FindFirstChildOfClass("TextLabel") then
-                    local label = esp:FindFirstChildOfClass("TextLabel")
-                    label.Text = string.format("Ticket | %d m", distance)
-                    label.TextColor3 = Color3.fromRGB(255, 255, 0)
-                end
-                -- ↓ ИЗМЕНЕНО: Сохраняем больше информации
-                TicketBillboards[ticket] = {esp = esp, part = part}
-            end
-        else
-            -- ↓ ИЗМЕНЕНО: Прямое обновление без вызова UpdateBillboardESP
-            local distance = getDistanceFromPlayer(part.Position)
-            if TicketBillboards[ticket].esp and 
-               TicketBillboards[ticket].esp:FindFirstChildOfClass("TextLabel") then
-                local label = TicketBillboards[ticket].esp:FindFirstChildOfClass("TextLabel")
-                label.Text = string.format("Ticket | %d m", distance)
-            end
-        end
-    end
-    
-    -- ↓ ИЗМЕНЕНО: Улучшенная очистка
-    for ticket, data in pairs(TicketBillboards) do
-        if not ticketsFound[ticket] or not ticket.Parent then
-            if data.esp then  -- ↓ ИЗМЕНЕНО: Проверка на существование esp
-                data.esp:Destroy()
-            end
-            TicketBillboards[ticket] = nil
         end
     end
 end
