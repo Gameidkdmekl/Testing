@@ -3,6 +3,11 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
+-- Глобальные переменные
+local timerEnabled = false
+local MainInterface, TimerContainer, TimerLabel, StatusLabel
+local statsFolder, timerConnection, folderAddedConnection
+
 local function CreateTimerGUI()
     local MainInterface = Instance.new("ScreenGui")
     local TimerContainer = Instance.new("Frame")
@@ -15,95 +20,84 @@ local function CreateTimerGUI()
     MainInterface.Parent = PlayerGui
     MainInterface.ResetOnSpawn = false
     MainInterface.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    MainInterface.Enabled = true
+    MainInterface.Enabled = false -- По умолчанию выключен
     MainInterface.DisplayOrder = 2
     
-    -- Контейнер по центру сверху
+    -- Контейнер с позицией как у прошлого таймера
     TimerContainer.Name = "TimerContainer"
     TimerContainer.Parent = MainInterface
     TimerContainer.AnchorPoint = Vector2.new(0.5, 0)
     TimerContainer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     TimerContainer.BackgroundTransparency = 1.000
     TimerContainer.BorderColor3 = Color3.fromRGB(27, 42, 53)
-    TimerContainer.Position = UDim2.new(0.5, 0, 0.02, 0) -- Чуть ниже верха
-    TimerContainer.Size = UDim2.new(0.25, 0, 0.08, 0) -- Компактный размер
+    TimerContainer.Position = UDim2.new(0.5, 0, 0.04, 0)
+    TimerContainer.Size = UDim2.new(0.25, 0, 0.1, 0)
     TimerContainer.Visible = true
 
-    -- Простое поле таймера
+    -- Поле таймера - сплошной черный фон
     TimerDisplay.Name = "TimerDisplay"
     TimerDisplay.Parent = TimerContainer
-    TimerDisplay.AnchorPoint = Vector2.new(0.5, 0.5)
+    TimerDisplay.AnchorPoint = Vector2.new(0.5, 0)
     TimerDisplay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    TimerDisplay.BackgroundTransparency = 0.800 -- Полупрозрачный черный фон
+    TimerDisplay.BackgroundTransparency = 0.000
     TimerDisplay.BorderColor3 = Color3.fromRGB(27, 42, 53)
     TimerDisplay.BorderSizePixel = 0
-    TimerDisplay.Position = UDim2.new(0.5, 0, 0.5, 0)
+    TimerDisplay.Position = UDim2.new(0.5, 0, 0, 0)
     TimerDisplay.Size = UDim2.new(1, 0, 1, 0)
     TimerDisplay.ZIndex = 10000
 
     -- Закругленные углы
     local RoundedCorners = Instance.new("UICorner")
-    RoundedCorners.CornerRadius = UDim.new(0, 8)
+    RoundedCorners.CornerRadius = UDim.new(0, 4)
     RoundedCorners.Parent = TimerDisplay
 
     -- Черная обводка
     local BorderOutline = Instance.new("UIStroke")
     BorderOutline.Parent = TimerDisplay
-    BorderOutline.Thickness = 2
+    BorderOutline.Thickness = 1
     BorderOutline.Color = Color3.fromRGB(0, 0, 0)
-    BorderOutline.Transparency = 0.4
+    BorderOutline.Transparency = 0.8
 
-    -- Текст статуса (верхняя строка)
+    -- Текст статуса
     StatusText.Name = "StatusText"
     StatusText.Parent = TimerDisplay
-    StatusText.AnchorPoint = Vector2.new(0.5, 0)
+    StatusText.AnchorPoint = Vector2.new(0.5, 0.5)
     StatusText.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     StatusText.BackgroundTransparency = 1.000
     StatusText.BorderColor3 = Color3.fromRGB(27, 42, 53)
-    StatusText.Position = UDim2.new(0.5, 0, 0.05, 0) -- Верх таймера
-    StatusText.Size = UDim2.new(0.95, 0, 0.4, 0) -- 40% высоты
+    StatusText.Position = UDim2.new(0.5, 0, 0.25, 0)
+    StatusText.Size = UDim2.new(0.8, 0, 0.25, 0)
     StatusText.ZIndex = 10002
     StatusText.Font = Enum.Font.GothamBold
     StatusText.Text = "ROUND ACTIVE"
-    StatusText.TextColor3 = Color3.fromRGB(255, 255, 255) -- Белый текст
+    StatusText.TextColor3 = Color3.fromRGB(165, 194, 255)
     StatusText.TextScaled = true
     StatusText.TextSize = 14.000
-    StatusText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0) -- Черная обводка текста
-    StatusText.TextStrokeTransparency = 0.3
+    StatusText.TextStrokeTransparency = 0.950
     StatusText.TextWrapped = true
     StatusText.TextXAlignment = Enum.TextXAlignment.Center
-    StatusText.TextYAlignment = Enum.TextYAlignment.Top
 
-    -- Основной таймер (нижняя строка)
+    -- Основной таймер
     CountdownText.Name = "CountdownText"
     CountdownText.Parent = TimerDisplay
-    CountdownText.AnchorPoint = Vector2.new(0.5, 1)
+    CountdownText.AnchorPoint = Vector2.new(0.5, 0.5)
     CountdownText.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     CountdownText.BackgroundTransparency = 1.000
     CountdownText.BorderColor3 = Color3.fromRGB(27, 42, 53)
-    CountdownText.Position = UDim2.new(0.5, 0, 0.95, 0) -- Низ таймера
-    CountdownText.Size = UDim2.new(0.95, 0, 0.5, 0) -- 50% высоты
+    CountdownText.Position = UDim2.new(0.5, 0, 0.65, 0)
+    CountdownText.Size = UDim2.new(0.5, 0, 0.5, 0)
     CountdownText.ZIndex = 10002
     CountdownText.Font = Enum.Font.GothamBold
     CountdownText.Text = "0:00"
-    CountdownText.TextColor3 = Color3.fromRGB(255, 255, 255) -- Белый текст
+    CountdownText.TextColor3 = Color3.fromRGB(165, 194, 255)
     CountdownText.TextScaled = true
-    CountdownText.TextSize = 20.000 -- Крупнее чем статус
-    CountdownText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0) -- Черная обводка текста
-    CountdownText.TextStrokeTransparency = 0.3
+    CountdownText.TextSize = 14.000
+    CountdownText.TextStrokeTransparency = 0.950
     CountdownText.TextWrapped = true
     CountdownText.TextXAlignment = Enum.TextXAlignment.Center
-    CountdownText.TextYAlignment = Enum.TextYAlignment.Bottom
 
     return CountdownText, StatusText, MainInterface, TimerContainer
 end
-
-local TimerLabel, StatusLabel, MainInterface, TimerContainer = CreateTimerGUI()
-
--- Инициализируем переменные
-local statsFolder
-local timerConnection
-local folderAddedConnection
 
 local function formatTime(seconds)
     if not seconds then return "0:00" end
@@ -118,27 +112,14 @@ end
 local function updateTimerDisplay(timerValue, roundStarted)
     if not TimerLabel or not StatusLabel then return end
     
-    -- Обновляем текст таймера
     TimerLabel.Text = formatTime(timerValue)
     
-    -- Обновляем статус
     StatusLabel.Text = roundStarted and "ROUND ACTIVE" or "INTERMISSION"
     
-    -- Меняем цвет текста в зависимости от времени
-    if timerValue then
-        if timerValue <= 10 then
-            TimerLabel.TextColor3 = Color3.fromRGB(255, 150, 150) -- Светло-красный при 10 секундах
-            StatusLabel.TextColor3 = Color3.fromRGB(255, 150, 150)
-        elseif timerValue <= 30 then
-            TimerLabel.TextColor3 = Color3.fromRGB(255, 255, 150) -- Светло-желтый при 30 секундах
-            StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 150)
-        else
-            TimerLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- Белый при >30 секундах
-            StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        end
+    if timerValue and timerValue <= 5 then
+        TimerLabel.TextColor3 = Color3.fromRGB(215, 100, 100)
     else
-        TimerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TimerLabel.TextColor3 = Color3.fromRGB(165, 194, 255)
     end
 end
 
@@ -156,39 +137,42 @@ local function setupTimerConnection()
             updateTimerDisplay(timerValue, roundStarted)
         end)
         
-        -- Устанавливаем начальные значения
         local initialTimer = statsFolder:GetAttribute("Timer")
         local initialRoundStarted = statsFolder:GetAttribute("RoundStarted")
         
         updateTimerDisplay(initialTimer, initialRoundStarted)
-    else
-        -- Если папки нет, показываем стандартные значения
-        TimerLabel.Text = "0:00"
-        StatusLabel.Text = "WAITING"
-        TimerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     end
 end
 
--- Ищем папку Stats
 local function findStatsFolder()
     local gameFolder = workspace:FindFirstChild("Game")
     if gameFolder then
         statsFolder = gameFolder:FindFirstChild("Stats")
-        if statsFolder then
+        if statsFolder and timerEnabled then
             setupTimerConnection()
         end
     end
 end
 
--- Инициализация при запуске
-task.spawn(function()
-    -- Ждем загрузки игры
-    task.wait(2)
+local function initTimer()
+    if not TimerLabel then
+        TimerLabel, StatusLabel, MainInterface, TimerContainer = CreateTimerGUI()
+    end
+end
+
+-- Функция включения таймера (вызывается из TimerDisplayToggle)
+local function startTimer()
+    if timerEnabled then return end
+    
+    timerEnabled = true
+    initTimer()
+    
+    if MainInterface then
+        MainInterface.Enabled = true
+    end
     
     findStatsFolder()
     
-    -- Слушаем создание папки Game
     if not statsFolder then
         folderAddedConnection = workspace.ChildAdded:Connect(function(child)
             if child.Name == "Game" then
@@ -197,19 +181,28 @@ task.spawn(function()
             end
         end)
     end
-end)
+end
 
--- Очистка при уничтожении
-local function cleanupTimer()
+-- Функция выключения таймера
+local function stopTimer()
+    if not timerEnabled then return end
+    
+    timerEnabled = false
+    
+    if MainInterface then
+        MainInterface.Enabled = false
+    end
+    
     if timerConnection then
         timerConnection:Disconnect()
         timerConnection = nil
     end
+    
     if folderAddedConnection then
         folderAddedConnection:Disconnect()
         folderAddedConnection = nil
     end
 end
 
--- Очищаем при выходе игрока
-LocalPlayer.CharacterRemoving:Connect(cleanupTimer)
+-- Таймер НЕ запускается автоматически, только при включении через GUI
+print("Timer GUI loaded. It will only start when Show Timer is enabled.")
