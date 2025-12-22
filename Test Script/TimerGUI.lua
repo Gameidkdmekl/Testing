@@ -46,10 +46,10 @@ local function CreateTimerGUI()
     TimerDisplay.Parent = TimerContainer
     TimerDisplay.AnchorPoint = Vector2.new(0.5, 0.5)
     TimerDisplay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    TimerDisplay.BackgroundTransparency = 0.800
+    TimerDisplay.BackgroundTransparency = 0
     TimerDisplay.BorderColor3 = Color3.fromRGB(27, 42, 53)
     TimerDisplay.BorderSizePixel = 0
-    TimerDisplay.Position = UDim2.new(0.5, 0, 0.5, 0)
+    TimerDisplay.Position = UDim2.new(0.5, 0, 0.09, 0)
     TimerDisplay.Size = UDim2.new(0.3, 0, 0.15, 0)
     TimerDisplay.ZIndex = 10000
 
