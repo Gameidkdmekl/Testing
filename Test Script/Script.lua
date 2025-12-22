@@ -40,8 +40,8 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Billboard ESP Variables
 local NextbotBillboards = {}
-local PlayerESPScript = nil -- Добавляем переменную для хранения загруженного скрипта
 local TicketBillboards = {}
+local externalESPScript = nil  -- ДОБАВИТЬ ЭТУ СТРОКУ
 
 -- Tracer ESP Variables
 local playerTracerElements = {}
@@ -787,41 +787,98 @@ end)
 
 PlayerToggle:OnChanged(function(value)
     if value then
-        -- Загружаем ESP
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Test%20Script/Esp.lua"))()
+        -- Показываем уведомление о загрузке
+        Fluent:Notify({
+            Title = "ESP Players",
+            Content = "Loading external ESP script...",
+            Duration = 2
+        })
+        
+        -- Загружаем внешний ESP скрипт
+        if not externalESPScript then
+            local success, result = pcall(function()
+                -- Загружаем скрипт с GitHub
+                externalESPScript = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Test%20Script/Esp.lua", true))()
+                
+                -- Если скрипт возвращает функцию, запускаем её
+                if type(externalESPScript) == "function" then
+                    externalESPScript = externalESPScript()
+                end
+                
+                return externalESPScript
+            end)
+            
+            if not success then
+                -- В случае ошибки, показываем уведомление
+                warn("Failed to load external ESP script:", result)
+                Fluent:Notify({
+                    Title = "ESP Players",
+                    Content = "Failed to load external ESP: " .. tostring(result),
+                    Duration = 4
+                })
+                
+                externalESPScript = nil
+                Options.PlayerToggle:SetValue(false) -- Выключаем тумблер при ошибке
+            else
+                -- Успешно загрузили внешний ESP
+                Fluent:Notify({
+                    Title = "ESP Players",
+                    Content = "External ESP loaded successfully!",
+                    Duration = 2
+                })
+            end
+        else
+            -- Если скрипт уже загружен, но был отключен, перезапускаем его
+            if type(externalESPScript) == "function" then
+                externalESPScript = externalESPScript()
+            elseif type(externalESPScript) == "table" and externalESPScript.Enable then
+                pcall(function()
+                    externalESPScript:Enable()
+                end)
+            end
+        end
     else
-        -- Полностью очищаем интерфейс от ESP
-        local player = game:GetService("Players").LocalPlayer
-        
-        -- 1. Удаляем Drawing объекты
-        for _, obj in pairs(player.PlayerGui:GetChildren()) do
-            if obj:IsA("Drawing") then
-                pcall(function() obj:Remove() end)
+        -- Отключаем внешний ESP скрипт
+        if externalESPScript then
+            -- Пробуем уничтожить скрипт, если он поддерживает метод Destroy
+            if type(externalESPScript) == "table" then
+                if externalESPScript.Destroy then
+                    pcall(function()
+                        externalESPScript:Destroy()
+                    end)
+                elseif externalESPScript.Disable then
+                    pcall(function()
+                        externalESPScript:Disable()
+                    end)
+                end
+            elseif type(externalESPScript) == "function" then
+                -- Если это функция, возможно она возвращает объект для уничтожения
+                pcall(function()
+                    -- Пробуем вызвать как функцию уничтожения
+                    externalESPScript()
+                end)
             end
-        end
-        
-        -- 2. Удаляем ScreenGui с ESP
-        for _, gui in pairs(player.PlayerGui:GetChildren()) do
-            if gui:IsA("ScreenGui") and (gui.Name:find("ESP") or gui.Name:find("Esp")) then
-                pcall(function() gui:Destroy() end)
-            end
-        end
-        
-        -- 3. Удаляем BillboardGui из персонажей
-        for _, otherPlayer in pairs(game:GetService("Players"):GetPlayers()) do
-            if otherPlayer.Character then
-                for _, part in pairs(otherPlayer.Character:GetDescendants()) do
-                    if part:IsA("BillboardGui") then
-                        pcall(function() part:Destroy() end)
+            
+            externalESPScript = nil
+            
+            -- Очищаем все объекты ESP, созданные внешним скриптом
+            task.spawn(function()
+                wait(0.1) -- Даем время на очистку
+                for _, obj in pairs(game:GetDescendants()) do
+                    if obj.Name:find("ESP") or obj.Name:find("esp") or obj.Name:find("Esp") then
+                        pcall(function()
+                            obj:Destroy()
+                        end)
                     end
                 end
-            end
+            end)
         end
         
-        -- 4. Перезагружаем персонажа (гарантированно сбросит ESP)
-        if player.Character then
-            player.Character:BreakJoints()
-        end
+        Fluent:Notify({
+            Title = "ESP Players",
+            Content = "ESP disabled successfully!",
+            Duration = 2
+        })
     end
 end)
 
