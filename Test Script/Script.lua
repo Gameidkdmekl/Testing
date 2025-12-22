@@ -3366,45 +3366,160 @@ end
 
 local function setInfiniteSlide(enabled)
     infiniteSlideEnabled = enabled
+-- Добавьте эти переменные в начало секции Movement Modification
+local infiniteSlideEnabled = false
+local slideFrictionValue = -8
+local movementTables = {}
+local infiniteSlideConnection = nil
+local RunService = game:GetService("RunService")
+local player = game:GetService("Players").LocalPlayer
 
-    if enabled then
-        findMovementTables()
-        updatePlayerModel()
-        
-        if not infiniteSlideCharacterConn then
-            infiniteSlideCharacterConn = player.CharacterAdded:Connect(onCharacterAddedSlide)
-        end
-        
-        if player.Character then
-            task.spawn(function()
-                onCharacterAddedSlide(player.Character)
-            end)
-        end
-        
-        if infiniteSlideHeartbeat then infiniteSlideHeartbeat:Disconnect() end
-        infiniteSlideHeartbeat = RunService.Heartbeat:Connect(infiniteSlideHeartbeatFunc)
-        
-    else
-        if infiniteSlideHeartbeat then
-            infiniteSlideHeartbeat:Disconnect()
-            infiniteSlideHeartbeat = nil
-        end
-        
-        if infiniteSlideCharacterConn then
-            infiniteSlideCharacterConn:Disconnect()
-            infiniteSlideCharacterConn = nil
-        end
-        
-        setSlideFriction(5)
-        movementTables = {}
+local requiredKeys = {
+    "Friction","AirStrafeAcceleration","JumpHeight","RunDeaccel",
+    "JumpSpeedMultiplier","JumpCap","SprintCap","WalkSpeedMultiplier",
+    "BhopEnabled","Speed","AirAcceleration","RunAccel","SprintAcceleration"
+}
+
+local lastFrictionValue = 5 -- Запоминаем последнее значение
+
+local function findMovementTables()
+    -- Не ищем снова, если уже нашли
+    if #movementTables > 0 then
+        return true
     end
+    
+    movementTables = {}
+    local count = 0
+    local maxSearch = 100 -- Ограничиваем поиск для оптимизации
+    
+    for _, obj in ipairs(getgc(true)) do
+        if count >= maxSearch then break end
+        
+        if typeof(obj) == "table" then
+            local hasAll = true
+            for _, key in ipairs(requiredKeys) do
+                if rawget(obj, key) == nil then
+                    hasAll = false
+                    break
+                end
+            end
+            
+            if hasAll then
+                table.insert(movementTables, obj)
+                count = count + 1
+            end
+        end
+    end
+    
+    return #movementTables > 0
+end
+
+local function setSlideFriction(value)
+    -- Если значение не изменилось, не обновляем (оптимизация)
+    if lastFrictionValue == value then
+        return
+    end
+    
+    lastFrictionValue = value
+    
+    -- Применяем трение только к актуальным таблицам
+    if #movementTables > 0 then
+        for _, tbl in ipairs(movementTables) do
+            if tbl and typeof(tbl) == "table" and rawget(tbl, "Friction") then
+                pcall(function()
+                    tbl.Friction = value
+                end)
+            end
+        end
+    end
+end
+
+local cachedPlayerModel = nil
+local lastModelCheck = 0
+
+local function updatePlayerModel()
+    local currentTime = tick()
+    
+    -- Кэшируем на 0.2 секунды для оптимизации
+    if cachedPlayerModel and cachedPlayerModel.Parent and currentTime - lastModelCheck < 0.2 then
+        return cachedPlayerModel
+    end
+    
+    local gameFolder = workspace:FindFirstChild("Game")
+    if not gameFolder then 
+        cachedPlayerModel = nil
+        return nil 
+    end
+    
+    local playersFolder = gameFolder:FindFirstChild("Players")
+    if not playersFolder then 
+        cachedPlayerModel = nil
+        return nil 
+    end
+    
+    cachedPlayerModel = playersFolder:FindFirstChild(player.Name)
+    lastModelCheck = currentTime
+    
+    return cachedPlayerModel
 end
 
 InfiniteSlideToggle = MiscTab:AddToggle("InfiniteSlideToggle", {
     Title = "Sprint Slide",
     Default = false,
     Callback = function(Value)
-        setInfiniteSlide(Value)
+        infiniteSlideEnabled = Value
+        
+        if Value then
+            -- Запускаем оптимизированный бесконечный слайд
+            task.spawn(function()
+                -- Инициализация таблиц только один раз при запуске
+                findMovementTables()
+                
+                -- Используем Heartbeat с оптимизированными задержками
+                local lastUpdate = tick()
+                local slideHeartbeat = RunService.Heartbeat:Connect(function()
+                    if not infiniteSlideEnabled then
+                        slideHeartbeat:Disconnect()
+                        setSlideFriction(5)
+                        return
+                    end
+                    
+                    -- Оптимизация: обновляем не каждый кадр, а каждые 0.05 секунды
+                    local currentTime = tick()
+                    if currentTime - lastUpdate < 0.05 then
+                        return
+                    end
+                    lastUpdate = currentTime
+                    
+                    local playerModel = updatePlayerModel()
+                    if not playerModel then return end
+                    
+                    local state = playerModel:GetAttribute("State")
+                    
+                    if state == "Slide" then
+                        pcall(function()
+                            playerModel:SetAttribute("State", "EmotingSlide")
+                        end)
+                        setSlideFriction(slideFrictionValue)
+                    elseif state == "EmotingSlide" then
+                        setSlideFriction(slideFrictionValue)
+                    else
+                        setSlideFriction(5)
+                    end
+                end)
+                
+                -- Сохраняем ссылку на соединение для отключения
+                infiniteSlideConnection = slideHeartbeat
+                
+            end)
+        else
+            -- Отключаем при выключении
+            if infiniteSlideConnection then
+                infiniteSlideConnection:Disconnect()
+                infiniteSlideConnection = nil
+            end
+            setSlideFriction(5)
+        end
     end
 })
 
