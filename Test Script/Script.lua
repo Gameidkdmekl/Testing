@@ -787,53 +787,41 @@ end)
 
 PlayerToggle:OnChanged(function(value)
     if value then
-        -- Включаем ESP - загружаем скрипт
-        if not ESPRunning then
-            ESPRunning = true
-            -- Сохраняем ссылку на загруженный скрипт
-            PlayerESPScript = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Test%20Script/Esp.lua"))()
-        end
+        -- Загружаем ESP
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Test%20Script/Esp.lua"))()
     else
-        -- Выключаем ESP - принудительно очищаем
-        ESPRunning = false
+        -- Полностью очищаем интерфейс от ESP
+        local player = game:GetService("Players").LocalPlayer
         
-        -- Способ 1: Удаляем все Drawing объекты (самый эффективный для ESP)
-        pcall(function()
-            for _, obj in pairs(game:GetService("Players").LocalPlayer.PlayerGui:GetChildren()) do
-                if obj:IsA("Drawing") then
-                    obj:Remove()
-                end
+        -- 1. Удаляем Drawing объекты
+        for _, obj in pairs(player.PlayerGui:GetChildren()) do
+            if obj:IsA("Drawing") then
+                pcall(function() obj:Remove() end)
             end
-        end)
+        end
         
-        -- Способ 2: Удаляем все BillboardGui (если ESP использует их)
-        pcall(function()
-            for _, player in pairs(game:GetService("Players"):GetPlayers()) do
-                if player.Character then
-                    for _, part in pairs(player.Character:GetDescendants()) do
-                        if part:IsA("BillboardGui") and part.Name:find("ESP") then
-                            part:Destroy()
-                        end
+        -- 2. Удаляем ScreenGui с ESP
+        for _, gui in pairs(player.PlayerGui:GetChildren()) do
+            if gui:IsA("ScreenGui") and (gui.Name:find("ESP") or gui.Name:find("Esp")) then
+                pcall(function() gui:Destroy() end)
+            end
+        end
+        
+        -- 3. Удаляем BillboardGui из персонажей
+        for _, otherPlayer in pairs(game:GetService("Players"):GetPlayers()) do
+            if otherPlayer.Character then
+                for _, part in pairs(otherPlayer.Character:GetDescendants()) do
+                    if part:IsA("BillboardGui") then
+                        pcall(function() part:Destroy() end)
                     end
                 end
             end
-        end)
+        end
         
-        -- Способ 3: Удаляем все объекты с именем ESP
-        pcall(function()
-            for _, obj in pairs(workspace:GetDescendants()) do
-                if obj.Name:find("ESP") or obj.Name:find("Esp") then
-                    obj:Destroy()
-                end
-            end
-        end)
-        
-        -- Способ 4: Перезагрузить локального игрока (радикальный, но работает)
-        pcall(function()
-            game:GetService("Players").LocalPlayer.Character:BreakJoints()
-        end)
-        
-        PlayerESPScript = nil
+        -- 4. Перезагружаем персонажа (гарантированно сбросит ESP)
+        if player.Character then
+            player.Character:BreakJoints()
+        end
     end
 end)
 
