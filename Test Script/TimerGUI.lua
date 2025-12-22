@@ -15,7 +15,7 @@ local function CreateTimerGUI()
     MainInterface.Parent = PlayerGui
     MainInterface.ResetOnSpawn = false
     MainInterface.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    MainInterface.Enabled = false
+    MainInterface.Enabled = true
     MainInterface.DisplayOrder = 2
     
     -- Контейнер по центру сверху
