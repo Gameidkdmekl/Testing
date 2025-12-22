@@ -40,7 +40,7 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Billboard ESP Variables
 local NextbotBillboards = {}
-local PlayerBillboards = {}
+local PlayerESPScript = nil -- Добавляем переменную для хранения загруженного скрипта
 local TicketBillboards = {}
 
 -- Tracer ESP Variables
@@ -206,56 +206,6 @@ local function scanForNextbots()
                 DestroyBillboardESP("NextbotESP", data.hrp)
             end
             NextbotBillboards[model] = nil
-        end
-    end
-end
-
-local function scanForPlayers()
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            local head = player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("HumanoidRootPart")
-            if head then
-                -- Проверяем наличие папки Revives в персонаже игрока
-                local extraText = ""
-                local textColor = Color3.fromRGB(0, 255, 0) -- Зеленый по умолчанию
-                
-                if player.Character:FindFirstChild("Revives") then
-                    extraText = " | revives"
-                    textColor = Color3.fromRGB(255, 255, 0) -- Желтый для ревайвов
-                end
-                
-                if not PlayerBillboards[player] then
-                    local esp = CreateBillboardESP("PlayerESP", head, textColor, 14)
-                    if esp then
-                        -- Обновляем ESP вручную
-                        local distance = getDistanceFromPlayer(head.Position)
-                        local name = player.Name
-                        
-                        if esp:FindFirstChildOfClass("TextLabel") then
-                            local label = esp:FindFirstChildOfClass("TextLabel")
-                            label.Text = string.format("%s | %d m%s", name, distance, extraText)
-                            label.TextColor3 = textColor
-                        end
-                        
-                        PlayerBillboards[player] = esp
-                    end
-                else
-                    -- Обновляем существующий ESP
-                    local distance = getDistanceFromPlayer(head.Position)
-                    local name = player.Name
-                    
-                    if PlayerBillboards[player] and PlayerBillboards[player]:FindFirstChildOfClass("TextLabel") then
-                        local label = PlayerBillboards[player]:FindFirstChildOfClass("TextLabel")
-                        label.Text = string.format("%s | %d m%s", name, distance, extraText)
-                        label.TextColor3 = textColor
-                    end
-                end
-            end
-        elseif PlayerBillboards[player] then
-            if player.Character then
-                DestroyBillboardESP("PlayerESP", player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("HumanoidRootPart"))
-            end
-            PlayerBillboards[player] = nil
         end
     end
 end
@@ -837,25 +787,19 @@ end)
 
 PlayerToggle:OnChanged(function(value)
     if value then
-        if not playerLoop then
-            playerLoop = RunService.RenderStepped:Connect(function()
-                if Options.PlayerToggle.Value then
-                    scanForPlayers()
-                end
-            end)
+        -- Запускаем внешний ESP скрипт при включении
+        if not PlayerESPScript then
+            PlayerESPScript = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Test%20Script/Esp.lua"))()
         end
     else
-        if playerLoop then
-            playerLoop:Disconnect()
-            playerLoop = nil
-        end
+        -- Останавливаем ESP скрипт при выключении
+        -- Примечание: внешний скрипт должен иметь свою систему отключения
+        -- Если в скрипте нет функции отключения, можно просто перезагрузить игру или использовать другие методы
         
-        for player, esp in pairs(PlayerBillboards) do
-            if player.Character then
-                DestroyBillboardESP("PlayerESP", player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("HumanoidRootPart"))
-            end
-        end
-        PlayerBillboards = {}
+        -- Если внешний ESP имеет функцию отключения, вызываем её
+        -- Например: if PlayerESPScript and PlayerESPScript.Stop then PlayerESPScript.Stop() end
+        
+        PlayerESPScript = nil
     end
 end)
 
