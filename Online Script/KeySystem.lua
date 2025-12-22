@@ -481,7 +481,12 @@ local function executeScript()
     local success, errorMsg = pcall(function()
         -- Загружаем скрипт хаба
         loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/Script.lua"))()
-        game:GetService("Players").LocalPlayer.PlayerGui.DraconicHubGui:Destroy()
+        
+        -- УДАЛЯЕМ GUI ПОСЛЕ УСПЕШНОЙ ЗАГРУЗКИ СКРИПТА
+        if screenGui and screenGui.Parent then
+            screenGui:Destroy()
+            print("[Draconic Hub] GUI removed after successful script load")
+        end
     end)
     
     if not success then
