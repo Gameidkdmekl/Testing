@@ -5823,7 +5823,7 @@ InfoTab:AddButton({
         })
     end
 })
-
+game:GetService("Players").LocalPlayer.PlayerGui.DraconicHubGui:Destroy()
 Window:SelectTab(1)
 SaveManager:LoadAutoloadConfig()
 loadstring(game:HttpGet('https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/TimerGUI.lua'))()
