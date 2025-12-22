@@ -1,221 +1,115 @@
+-- Esp.lua (внешний ESP файл)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
 
-local localPlayer = Players.LocalPlayer
-local camera = workspace.CurrentCamera
+local ESPEnabled = true
+local ESPInstances = {}
 
-local PlayersFolder = workspace:WaitForChild("Game"):WaitForChild("Players")
-
-local DEFAULT_COLOR = Color3.new(1,1,1)
-local REVIVES_COLOR = Color3.new(1,1,0)
-
-local highlights = {}
-local billboardGuis = {}
-
--- Функция создания оболочки (Highlight)
-local function createHighlight(character)
-    local highlight = Instance.new("Highlight")
-    highlight.Adornee = character
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    highlight.FillColor = DEFAULT_COLOR
-    highlight.OutlineColor = DEFAULT_COLOR
-    highlight.Parent = character
-    return highlight
+-- Функция для отключения ESP
+_G.DisableESP = function()
+    ESPEnabled = false
+    for _, esp in pairs(ESPInstances) do
+        pcall(function()
+            esp:Destroy()
+        end)
+    end
+    ESPInstances = {}
 end
 
--- Создаём BillboardGui с ником и дистанцией
-local function createBillboardGui(character, player)
-    local head = character:FindFirstChild("Head")
-    if not head then return end
-
-    local billboardGui = Instance.new("BillboardGui")
-    billboardGui.Name = "PlayerInfoGui"
-    billboardGui.Adornee = head
-    billboardGui.Size = UDim2.new(0,200,0,50)
-    billboardGui.StudsOffset = Vector3.new(0,2,0)
-    billboardGui.AlwaysOnTop = true
-    billboardGui.Parent = head
-
+local function createESP(player)
+    if not ESPEnabled or player == LocalPlayer then return end
+    
+    local character = player.Character or player.CharacterAdded:Wait()
+    if not character then return end
+    
+    local head = character:WaitForChild("Head")
+    
+    -- Создаем BillboardGui для ESP
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ExternalESP"
+    billboard.Adornee = head
+    billboard.Size = UDim2.new(0, 100, 0, 40)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.MaxDistance = 1000
+    billboard.Parent = head
+    
     local textLabel = Instance.new("TextLabel")
-    textLabel.Name = "InfoLabel"
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
     textLabel.BackgroundTransparency = 1
-    textLabel.TextColor3 = Color3.new(1,1,1)
-    textLabel.TextStrokeTransparency = 0
-    textLabel.Font = Enum.Font.SourceSansBold
-    textLabel.TextSize = 18
-    textLabel.Size = UDim2.new(1,0,1,0)
     textLabel.Text = player.Name
-    textLabel.Parent = billboardGui
-    return billboardGui, textLabel
-end
-
--- Обновление информации в BillboardGui
-local function updateBillboardInfo(textLabel, player)
-    if not player.Character then
-        textLabel.Text = player.Name
-        return
-    end
-    local head = player.Character:FindFirstChild("Head")
-    if not head then
-        textLabel.Text = player.Name
-        return
-    end
-
-    if not localPlayer.Character then
-        textLabel.Text = player.Name
-        return
-    end
+    textLabel.TextColor3 = Color3.fromRGB(0, 255, 0) -- Зеленый
+    textLabel.TextSize = 14
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.Parent = billboard
     
-    local localHead = localPlayer.Character:FindFirstChild("Head")
-    if not localHead then
-        textLabel.Text = player.Name
-        return
-    end
-
-    local distance = (head.Position - localHead.Position).Magnitude
-    distance = math.floor(distance)
-
-    local revivesFolder = player.Character:FindFirstChild("Revives")
-    local extraText = ""
-    if revivesFolder then
-        extraText = " | Revives"
-        textLabel.TextColor3 = REVIVES_COLOR
-    else
-        textLabel.TextColor3 = Color3.new(1,1,1)
-    end
-
-    textLabel.Text = string.format("%s | %d studs%s", player.Name, distance, extraText)
-end
-
--- Обновляем цвет Highlight в зависимости от наличия Revives
-local function updateHighlightColor(highlight, character)
-    if character:FindFirstChild("Revives") then
-        highlight.FillColor = REVIVES_COLOR
-        highlight.OutlineColor = REVIVES_COLOR
-    else
-        highlight.FillColor = DEFAULT_COLOR
-        highlight.OutlineColor = DEFAULT_COLOR
-    end
-end
-
--- Основная функция настроек выделения игрока
-local function setupPlayerHighlight(player)
-    if player == localPlayer then return end
-    if not player.Character then return end
-
-    local character = player.Character
+    -- Добавляем обводку
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.new(0, 0, 0)
+    stroke.Thickness = 2
+    stroke.Parent = textLabel
     
-    if highlights[player] then
-        highlights[player]:Destroy()
-        highlights[player] = nil
-    end
-    if billboardGuis[player] then
-        if billboardGuis[player].Parent then
-            billboardGuis[player]:Destroy()
-        end
-        billboardGuis[player] = nil
-    end
-
-    local highlight = createHighlight(character)
-    highlights[player] = highlight
-
-    local billboardGui, textLabel = createBillboardGui(character, player)
-    if billboardGui then
-        billboardGuis[player] = billboardGui
-    end
-
-    local function onRevivesChanged()
-        updateHighlightColor(highlight, character)
-    end
+    ESPInstances[player] = billboard
     
-    local revivesConnection = character.ChildAdded:Connect(function(child)
-        if child.Name == "Revives" then
-            onRevivesChanged()
-        end
-    end)
-    
-    local revivesRemovedConnection = character.ChildRemoved:Connect(function(child)
-        if child.Name == "Revives" then
-            onRevivesChanged()
-        end
-    end)
-
-    highlight:GetPropertyChangedSignal("Parent"):Connect(function()
-        if not highlight.Parent then
-            revivesConnection:Disconnect()
-            revivesRemovedConnection:Disconnect()
-        end
-    end)
-
-    updateHighlightColor(highlight, character)
-end
-
--- При респавне игрока переставляем выделение
-local function onCharacterAdded(player, character)
-    wait(0.5)
-    setupPlayerHighlight(player)
-end
-
--- Обработка игрока
-local function onPlayerAdded(player)
-    if player == localPlayer then return end
-    
-    if player.Character then
-        onCharacterAdded(player, player.Character)
-    end
-
-    player.CharacterAdded:Connect(function(character)
-        onCharacterAdded(player, character)
-    end)
-    
-    player:GetPropertyChangedSignal("Parent"):Connect(function()
-        if player.Parent == nil then
-            if highlights[player] then
-                highlights[player]:Destroy()
-                highlights[player] = nil
-            end
-            if billboardGuis[player] then
-                billboardGuis[player]:Destroy()
-                billboardGuis[player] = nil
-            end
-        end
-    end)
-end
-
--- Обновление дистанции каждый кадр
-RunService.RenderStepped:Connect(function()
-    if not localPlayer.Character or not localPlayer.Character:FindFirstChild("Head") then
-        return
-    end
-
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player == localPlayer then continue end
+    -- Обновление расстояния
+    local function updateESP()
+        if not ESPEnabled or not billboard or not billboard.Parent then return end
         
-        if player.Character and billboardGuis[player] then
-            local textLabel = billboardGuis[player]:FindFirstChild("InfoLabel")
-            if textLabel then
-                updateBillboardInfo(textLabel, player)
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local distance = (head.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+            textLabel.Text = string.format("%s | %d m", player.Name, math.floor(distance))
+            
+            -- Меняем цвет если у игрока есть ревайвы
+            if character:FindFirstChild("Revives") then
+                textLabel.TextColor3 = Color3.fromRGB(255, 255, 0) -- Желтый
+            else
+                textLabel.TextColor3 = Color3.fromRGB(0, 255, 0) -- Зеленый
             end
         end
     end
-end)
-
--- Инициализируем для всех существующих игроков (кроме локального)
-for _, player in ipairs(Players:GetPlayers()) do
-    onPlayerAdded(player)
+    
+    -- Обновляем ESP каждый кадр
+    local connection
+    connection = RunService.Heartbeat:Connect(function()
+        if not ESPEnabled or not billboard or not billboard.Parent then
+            if connection then
+                connection:Disconnect()
+            end
+            return
+        end
+        updateESP()
+    end)
+    
+    -- Очистка при удалении персонажа
+    player.CharacterRemoving:Connect(function()
+        if ESPInstances[player] then
+            ESPInstances[player]:Destroy()
+            ESPInstances[player] = nil
+        end
+    end)
 end
 
--- Подписываемся на новых игроков
-Players.PlayerAdded:Connect(onPlayerAdded)
-
--- Очищаем выделения при выходе игрока
-Players.PlayerRemoving:Connect(function(player)
-    if highlights[player] then
-        highlights[player]:Destroy()
-        highlights[player] = nil
+-- Подключаем ESP для всех игроков
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        task.spawn(createESP, player)
     end
-    if billboardGuis[player] then
-        billboardGuis[player]:Destroy()
-        billboardGuis[player] = nil
+end
+
+-- Подключаем для новых игроков
+Players.PlayerAdded:Connect(function(player)
+    if player ~= LocalPlayer then
+        task.spawn(createESP, player)
     end
 end)
+
+-- Удаляем ESP при выходе игрока
+Players.PlayerRemoving:Connect(function(player)
+    if ESPInstances[player] then
+        ESPInstances[player]:Destroy()
+        ESPInstances[player] = nil
+    end
+end)
+
+return _G.DisableESP
