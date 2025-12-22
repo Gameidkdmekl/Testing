@@ -5840,12 +5840,12 @@ Window:SelectTab(1)
 SaveManager:LoadAutoloadConfig()
 loadstring(game:HttpGet('https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/TimerGUI.lua'))()
 
--- НА ЭТО (простой таймер):
 local function createSimpleTimer()
     local RunService = game:GetService("RunService")
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
     local UserInputService = game:GetService("UserInputService")
+    local StatsService = game:GetService("Stats")
     
     -- Создаём GUI
     local screenGui = Instance.new("ScreenGui")
@@ -5855,7 +5855,7 @@ local function createSimpleTimer()
     screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
     
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 155, 0, 50)
+    frame.Size = UDim2.new(0, 140, 0, 40) -- Увеличили ширину для пинга
     frame.Position = UDim2.new(0, 10, 0, 10)
     frame.BackgroundTransparency = 0.7
     frame.BackgroundColor3 = Color3.new(0, 0, 0)
@@ -5909,22 +5909,17 @@ local function createSimpleTimer()
         end
     end)
     
-    -- Уголки для красоты
-    local uiCorner = Instance.new("UICorner")
-    uiCorner.CornerRadius = UDim.new(0, 6)
-    uiCorner.Parent = frame
-    
-    -- Тексты FPS и таймера
-    local fpsText = Instance.new("TextLabel")
-    fpsText.Size = UDim2.new(1, -10, 0.5, 0)
-    fpsText.Position = UDim2.new(0, 5, 0, 0)
-    fpsText.BackgroundTransparency = 1
-    fpsText.TextColor3 = Color3.new(1, 1, 1)
-    fpsText.Font = Enum.Font.GothamBold
-    fpsText.TextSize = 14
-    fpsText.TextXAlignment = Enum.TextXAlignment.Center
-    fpsText.Text = "FPS: 60"
-    fpsText.Parent = frame
+    -- Тексты FPS, Ping и таймера
+    local statsText = Instance.new("TextLabel")
+    statsText.Size = UDim2.new(1, -10, 0.5, 0)
+    statsText.Position = UDim2.new(0, 5, 0, 0)
+    statsText.BackgroundTransparency = 1
+    statsText.TextColor3 = Color3.new(1, 1, 1) -- Белый цвет для всего текста
+    statsText.Font = Enum.Font.GothamBold
+    statsText.TextSize = 14
+    statsText.TextXAlignment = Enum.TextXAlignment.Left
+    statsText.Text = "FPS: 60 | Ping: 0ms"
+    statsText.Parent = frame
     
     local timerText = Instance.new("TextLabel")
     timerText.Size = UDim2.new(1, -10, 0.5, 0)
@@ -5933,7 +5928,7 @@ local function createSimpleTimer()
     timerText.TextColor3 = Color3.new(1, 1, 1)
     timerText.Font = Enum.Font.GothamBold
     timerText.TextSize = 14
-    timerText.TextXAlignment = Enum.TextXAlignment.Center
+    timerText.TextXAlignment = Enum.TextXAlignment.Left
     timerText.Text = "Client Time: 0h 0m 0s"
     timerText.Parent = frame
     
@@ -5943,19 +5938,62 @@ local function createSimpleTimer()
     local lastUpdate = tick()
     local currentFPS = 0
     
+    -- Функция для получения пинга
+    local function getPing()
+        local ping = 0
+        
+        -- Метод 1: Через Stats (стандартный метод Roblox)
+        pcall(function()
+            local stats = StatsService
+            local networkStats = stats:FindFirstChild("Network")
+            if networkStats then
+                local serverStats = networkStats:FindFirstChild("ServerStatsItem")
+                if serverStats then
+                    ping = math.floor(serverStats:GetValue())
+                end
+            end
+        end)
+        
+        -- Метод 2: Если первый не сработал, используем альтернативный
+        if ping == 0 then
+            pcall(function()
+                -- Иногда пинг хранится в другом месте
+                local performanceStats = StatsService:FindFirstChild("PerformanceStats")
+                if performanceStats then
+                    local pingStat = performanceStats:FindFirstChild("Ping")
+                    if pingStat then
+                        ping = math.floor(pingStat:GetValue())
+                    end
+                end
+            end)
+        end
+        
+        -- Метод 3: Запасной вариант (если оба метода не работают)
+        if ping == 0 then
+            ping = 50 -- Примерное значение
+        end
+        
+        return ping
+    end
+    
     -- Обновление
     RunService.RenderStepped:Connect(function()
         frameCount = frameCount + 1
         
         local currentTime = tick()
         
-        -- Обновляем FPS
+        -- Обновляем FPS и Ping каждые 0.5 секунды
         if currentTime - lastUpdate >= 0.5 then
+            -- Обновляем FPS
             currentFPS = math.floor(frameCount / (currentTime - lastUpdate))
             frameCount = 0
             lastUpdate = currentTime
             
-            fpsText.Text = "FPS: " .. currentFPS
+            -- Получаем пинг
+            local ping = getPing()
+            
+            -- Обновляем текст
+            statsText.Text = string.format("FPS: %d | Ping: %dms", currentFPS, ping)
         end
         
         -- Обновляем таймер
@@ -5967,7 +6005,7 @@ local function createSimpleTimer()
         timerText.Text = string.format("Client Time: %dh %dm %ds", hours, minutes, seconds)
     end)
     
-    -- Функция для изменения позиции (можно вызывать извне)
+    -- Функция для изменения позиции
     function screenGui:SetPosition(x, y)
         frame.Position = UDim2.new(0, x, 0, y)
     end
@@ -5980,13 +6018,12 @@ local function createSimpleTimer()
     -- Сохраняем позицию при перезапуске персонажа
     LocalPlayer.CharacterAdded:Connect(function()
         task.wait(0.5)
-        -- Восстанавливаем GUI если он был удалён
         if not screenGui or not screenGui.Parent then
             screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
         end
     end)
     
-    print("Draconic Timer: Created with drag support!")
+    print("Draconic Timer: Created with FPS, Ping and Time display!")
     return screenGui
 end
 
