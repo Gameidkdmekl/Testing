@@ -811,27 +811,43 @@ PlayerToggle:OnChanged(function(value)
                     Duration = 5
                 })
                 Options.PlayerToggle:Set(false)
+                return
             end
+        end
+        
+        -- Запускаем loop для проверки состояния ESP
+        if not playerLoop then
+            playerLoop = RunService.Heartbeat:Connect(function()
+                if Options.PlayerToggle.Value and ExternalESPLoaded then
+                    -- Проверяем, что ESP работает
+                    if _G.ESPEnabled == false then
+                        _G.ESPEnabled = true
+                    end
+                end
+            end)
         end
     else
         -- Отключаем внешний ESP
         if ExternalESP and ExternalESPLoaded then
-            -- Если внешний ESP имеет функцию отключения, вызываем её
-            if type(ExternalESP) == "function" then
-                -- Попробуем найти функцию disable в глобальной области
-                if _G.DisableESP then
-                    pcall(_G.DisableESP)
-                end
+            if _G.DisableESP then
+                pcall(_G.DisableESP)
             end
-            ExternalESP = nil
-            ExternalESPLoaded = false
-            
-            Fluent:Notify({
-                Title = "ESP Players",
-                Content = "External ESP disabled!",
-                Duration = 3
-            })
         end
+        
+        -- Останавливаем loop
+        if playerLoop then
+            playerLoop:Disconnect()
+            playerLoop = nil
+        end
+        
+        ExternalESP = nil
+        ExternalESPLoaded = false
+        
+        Fluent:Notify({
+            Title = "ESP Players",
+            Content = "External ESP disabled!",
+            Duration = 3
+        })
     end
 end)
 
