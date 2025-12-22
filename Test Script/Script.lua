@@ -3404,7 +3404,37 @@ InfiniteSlideToggle = MiscTab:AddToggle("InfiniteSlideToggle", {
     Title = "Sprint Slide",
     Default = false,
     Callback = function(Value)
-        setInfiniteSlide(Value)
+        infiniteSlideEnabled = Value
+        
+        if Value then
+            -- Запускаем бесконечный слайд
+            task.spawn(function()
+                while infiniteSlideEnabled do
+                    wait()
+                    
+                    local playerModel = updatePlayerModel()
+                    if not playerModel then 
+                        continue 
+                    end
+                    
+                    local state = playerModel:GetAttribute("State")
+                    
+                    if state == "Slide" then
+                        pcall(function()
+                            playerModel:SetAttribute("State", "EmotingSlide")
+                        end)
+                    elseif state == "EmotingSlide" then
+                        findMovementTables()
+                        setSlideFriction(slideFrictionValue)
+                    else
+                        setSlideFriction(5)
+                    end
+                end
+            end)
+        else
+            -- Отключаем при выключении
+            setSlideFriction(5)
+        end
     end
 })
 
@@ -3418,6 +3448,7 @@ SlideFrictionInput = MiscTab:AddInput("SlideFrictionInput", {
         if num then
             slideFrictionValue = num
             if infiniteSlideEnabled then
+                findMovementTables()
                 setSlideFriction(slideFrictionValue)
             end
         end
