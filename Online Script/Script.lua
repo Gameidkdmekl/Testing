@@ -5826,7 +5826,7 @@ InfoTab:AddButton({
 
 Window:SelectTab(1)
 SaveManager:LoadAutoloadConfig()
-loadstring(game:HttpGet('https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Test%20Script/TimerGUI.lua'))()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/TimerGUI.lua'))()
 
 local function createSimpleTimer()
     local RunService = game:GetService("RunService")
@@ -6037,7 +6037,7 @@ LocalPlayer.CharacterAdded:Connect(function()
             
             -- Загружаем заново
             local success = pcall(function()
-                ExternalESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Test%20Script/Esp.lua"))()
+                ExternalESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/Esp.lua"))()
                 _G.ExternalESPRunning = true
             end)
             
