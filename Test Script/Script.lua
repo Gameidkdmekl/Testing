@@ -802,6 +802,36 @@ end)
 
 TicketToggle:OnChanged(function(value)
     if value then
+        -- Загружаем внешний Ticket ESP
+        if not ExternalTicketESPLoaded then
+            local success, errorMsg = pcall(function()
+                -- Загружаем внешний Ticket ESP
+                ExternalTicketESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Test%20Script/TicketESP.lua"))()
+                ExternalTicketESPLoaded = true
+                
+                -- Гарантируем, что ESP работает
+                _G.TicketESPRunning = true
+                
+                Fluent:Notify({
+                    Title = "ESP Tickets",
+                    Content = "External Ticket ESP loaded!",
+                    Duration = 3
+                })
+            end)
+            
+            if not success then
+                Fluent:Notify({
+                    Title = "ESP Tickets Error",
+                    Content = "Failed to load external Ticket ESP: " .. tostring(errorMsg),
+                    Duration = 5
+                })
+            end
+        else
+            -- Если уже загружен, включаем
+            _G.TicketESPRunning = true
+        end
+        
+        -- Запускаем loop
         if not ticketLoop then
             ticketLoop = RunService.RenderStepped:Connect(function()
                 if Options.TicketToggle.Value then
@@ -810,18 +840,35 @@ TicketToggle:OnChanged(function(value)
             end)
         end
     else
+        -- Отключаем внешний Ticket ESP
+        if ExternalTicketESPLoaded then
+            if _G.StopTicketESP then
+                pcall(_G.StopTicketESP)
+            end
+        end
+        
+        -- Останавливаем loop
         if ticketLoop then
             ticketLoop:Disconnect()
             ticketLoop = nil
         end
         
-        for ticket, esp in pairs(TicketBillboards) do
-            local part = ticket:IsA("Model") and ticket:FindFirstChild("Head") or ticket
-            if part then
-                DestroyBillboardESP("TicketESP", part)
+        -- Очищаем стандартные ESP
+        for ticket, data in pairs(TicketBillboards) do
+            if data.esp then
+                data.esp:Destroy()
             end
         end
         TicketBillboards = {}
+        
+        ExternalTicketESPLoaded = false
+        _G.TicketESPRunning = false
+        
+        Fluent:Notify({
+            Title = "ESP Tickets",
+            Content = "Ticket ESP disabled!",
+            Duration = 3
+        })
     end
 end)
 
