@@ -762,6 +762,7 @@ Tabs.Main:AddParagraph({
 
 -- Billboard ESP Loops
 local nextbotLoop
+local playerLoop
 local ticketLoop
 
 NextbotToggle:OnChanged(function(value)
