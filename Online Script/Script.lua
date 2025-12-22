@@ -735,7 +735,7 @@ PlayerToggle:OnChanged(function(value)
         if not ExternalESPLoaded then
             local success, errorMsg = pcall(function()
                 -- Загружаем внешний ESP
-                ExternalESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Test%20Script/Esp.lua"))()
+                ExternalESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/Esp.lua"))()
                 ExternalESPLoaded = true
                 
                 -- Гарантируем, что ESP работает
@@ -806,7 +806,7 @@ TicketToggle:OnChanged(function(value)
         if not ExternalTicketESPLoaded then
             local success, errorMsg = pcall(function()
                 -- Загружаем внешний Ticket ESP
-                ExternalTicketESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Test%20Script/TicketESP.lua"))()
+                ExternalTicketESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/TicketESP.lua"))()
                 ExternalTicketESPLoaded = true
                 
                 -- Гарантируем, что ESP работает
