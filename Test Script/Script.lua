@@ -40,8 +40,12 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Billboard ESP Variables
 local NextbotBillboards = {}
-local PlayerBillboards = {}
+-- local PlayerBillboards = {} <-- УДАЛЕНО
 local TicketBillboards = {}
+
+-- ДОБАВИТЬ ЭТИ СТРОКИ ГДЕ-ТО ПОСЛЕ ТАКИХ ПЕРЕМЕННЫХ:
+local ExternalESP = nil
+local ExternalESPLoaded = false
 
 -- Tracer ESP Variables
 local playerTracerElements = {}
