@@ -5855,7 +5855,7 @@ local function createSimpleTimer()
     screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
     
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 140, 0, 40) -- Увеличили ширину для пинга
+    frame.Size = UDim2.new(0, 147, 0, 40) -- Увеличили ширину для пинга
     frame.Position = UDim2.new(0, 10, 0, 10)
     frame.BackgroundTransparency = 0.7
     frame.BackgroundColor3 = Color3.new(0, 0, 0)
@@ -5917,7 +5917,7 @@ local function createSimpleTimer()
     statsText.TextColor3 = Color3.new(1, 1, 1) -- Белый цвет для всего текста
     statsText.Font = Enum.Font.GothamBold
     statsText.TextSize = 14
-    statsText.TextXAlignment = Enum.TextXAlignment.Left
+    statsText.TextXAlignment = Enum.TextXAlignment.Center
     statsText.Text = "FPS: 60 | Ping: 0ms"
     statsText.Parent = frame
     
@@ -5928,7 +5928,7 @@ local function createSimpleTimer()
     timerText.TextColor3 = Color3.new(1, 1, 1)
     timerText.Font = Enum.Font.GothamBold
     timerText.TextSize = 14
-    timerText.TextXAlignment = Enum.TextXAlignment.Left
+    timerText.TextXAlignment = Enum.TextXAlignment.Center
     timerText.Text = "Client Time: 0h 0m 0s"
     timerText.Parent = frame
     
