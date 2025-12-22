@@ -49,8 +49,8 @@ local function CreateTimerGUI()
     TimerDisplay.BackgroundTransparency = 0
     TimerDisplay.BorderColor3 = Color3.fromRGB(27, 42, 53)
     TimerDisplay.BorderSizePixel = 0
-    TimerDisplay.Position = UDim2.new(0.5, 0, 0.09, 0)
-    TimerDisplay.Size = UDim2.new(0.3, 0, 0.15, 0)
+    TimerDisplay.Position = UDim2.new(0.5, 0, 0.1, 0)
+    TimerDisplay.Size = UDim2.new(0.300000012, 0,0.100000001, 0)
     TimerDisplay.ZIndex = 10000
 
     RoundedCorners.CornerRadius = UDim.new(0, 12)
