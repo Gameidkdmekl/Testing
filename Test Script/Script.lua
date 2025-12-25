@@ -3387,6 +3387,10 @@ local function setInfiniteSlide(enabled)
         setSlideFriction(5)
         movementTables = {}
     end
+    
+    -- ВСТАВЬТЕ ЭТУ СТРОКУ В КОНЕЦ ФУНКЦИИ ▼▼▼
+    updateInfiniteSlideButtonText()
+    -- ▲▲▲ ВСТАВЬТЕ ЭТУ СТРОКУ В КОНЕЦ ФУНКЦИИ
 end
 
 InfiniteSlideToggle = MiscTab:AddToggle("InfiniteSlideToggle", {
@@ -3413,7 +3417,7 @@ SlideFrictionInput = MiscTab:AddInput("SlideFrictionInput", {
     end
 })
 
--- Добавить эту кнопку GUI для Infinite Slide
+-- ВСТАВЬТЕ ЭТОТ КОД ЗДЕСЬ ▼▼▼
 InfiniteSlideButtonToggle = MiscTab:AddToggle("InfiniteSlideButtonToggle", {
     Title = "Sprint Slide Button GUI",
     Default = false,
@@ -3430,7 +3434,6 @@ InfiniteSlideButtonToggle = MiscTab:AddToggle("InfiniteSlideButtonToggle", {
     end
 })
 
--- Добавить эту функцию для создания кнопки Infinite Slide
 local infiniteSlideButtonScreenGui = nil
 
 local function createInfiniteSlideButton()
@@ -3452,7 +3455,7 @@ local function createInfiniteSlideButton()
     
     local btn, clicker, stroke = createGradientButton(
         infiniteSlideButtonScreenGui,
-        UDim2.new(0.5, -btnWidth/2, 0.5, 180), -- Позиция ниже других кнопок
+        UDim2.new(0.5, -btnWidth/2, 0.5, 180),
         UDim2.new(0, btnWidth, 0, btnHeight),
         infiniteSlideEnabled and "Sprint Slide: On" or "Sprint Slide: Off"
     )
@@ -3473,7 +3476,6 @@ local function createInfiniteSlideButton()
     return infiniteSlideButtonScreenGui
 end
 
--- Добавить эту функцию для обновления текста кнопки
 local function updateInfiniteSlideButtonText()
     if infiniteSlideButtonScreenGui and infiniteSlideButtonScreenGui:FindFirstChild("GradientBtn") then
         local button = infiniteSlideButtonScreenGui:FindFirstChild("GradientBtn")
@@ -3482,52 +3484,7 @@ local function updateInfiniteSlideButtonText()
         end
     end
 end
-
--- Обновить функцию setInfiniteSlide для поддержки кнопки
-local originalSetInfiniteSlide = setInfiniteSlide
-function setInfiniteSlide(enabled)
-    infiniteSlideEnabled = enabled
-
-    if enabled then
-        findMovementTables()
-        updatePlayerModel()
-        
-        if not infiniteSlideCharacterConn then
-            infiniteSlideCharacterConn = player.CharacterAdded:Connect(onCharacterAddedSlide)
-        end
-        
-        if player.Character then
-            task.spawn(function()
-                onCharacterAddedSlide(player.Character)
-            end)
-        end
-        
-        if infiniteSlideHeartbeat then infiniteSlideHeartbeat:Disconnect() end
-        infiniteSlideHeartbeat = RunService.Heartbeat:Connect(infiniteSlideHeartbeatFunc)
-        
-    else
-        if infiniteSlideHeartbeat then
-            infiniteSlideHeartbeat:Disconnect()
-            infiniteSlideHeartbeat = nil
-        end
-        
-        if infiniteSlideCharacterConn then
-            infiniteSlideCharacterConn:Disconnect()
-            infiniteSlideCharacterConn = nil
-        end
-        
-        setSlideFriction(5)
-        movementTables = {}
-    end
-    
-    -- Обновляем текст кнопки если она существует
-    updateInfiniteSlideButtonText()
-end
-
--- Обновить Callback тумблера
-InfiniteSlideToggle:OnChanged(function(Value)
-    setInfiniteSlide(Value)
-end)
+-- ▲▲▲ ВСТАВЬТЕ ЭТОТ КОД ЗДЕСЬ
 
 MiscTab:AddParagraph({
     Title = "",
