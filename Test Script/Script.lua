@@ -3416,9 +3416,35 @@ SlideFrictionInput = MiscTab:AddInput("SlideFrictionInput", {
         end
     end
 })
-MiscTab:AddParagraph({
-    Title = "",
-    Content = ""
+SprintSlideButtonToggle = MiscTab:AddToggle("SprintSlideButtonToggle", {
+    Title = "Sprint Slide Button GUI",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            createSprintSlideGradientButton()
+        else
+            if sprintSlideButtonScreenGui then
+                sprintSlideButtonScreenGui:Destroy()
+                sprintSlideButtonScreenGui = nil
+            end
+        end
+    end
+})
+
+SprintSlideKeybind = MiscTab:AddKeybind("SprintSlideKeybind", {
+    Title = "Sprint Slide Keybind",
+    Mode = "Toggle",
+    Default = "V",
+    Callback = function()
+        sprintSlideEnabled = not sprintSlideEnabled
+        
+        if Options.InfiniteSlideToggle then
+            Options.InfiniteSlideToggle:SetValue(sprintSlideEnabled)
+        end
+        
+        updateSprintSlideButtonText()
+        setInfiniteSlide(sprintSlideEnabled)
+    end
 })
 
 local gravityEnabled = false
