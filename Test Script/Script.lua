@@ -3418,6 +3418,38 @@ SlideFrictionInput = MiscTab:AddInput("SlideFrictionInput", {
         end
     end
 })
+
+SprintSlideButtonToggle = MiscTab:AddToggle("SprintSlideButtonToggle", {
+    Title = "Sprint Slide Button GUI",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            createSprintSlideGradientButton()
+        else
+            if sprintSlideButtonScreenGui then
+                sprintSlideButtonScreenGui:Destroy()
+                sprintSlideButtonScreenGui = nil
+            end
+        end
+    end
+})
+
+SprintSlideKeybind = MiscTab:AddKeybind("SprintSlideKeybind", {
+    Title = "Sprint Slide Keybind",
+    Mode = "Toggle",
+    Default = "V",
+    Callback = function()
+        sprintSlideEnabled = not sprintSlideEnabled
+        
+        if Options.InfiniteSlideToggle then
+            Options.InfiniteSlideToggle:SetValue(sprintSlideEnabled)
+        end
+        
+        updateSprintSlideButtonText()
+        setInfiniteSlide(sprintSlideEnabled)
+    end
+})
+
 MiscTab:AddParagraph({
     Title = "",
     Content = ""
@@ -4040,6 +4072,10 @@ task.spawn(function()
     task.wait(1)
     if Options.BhopButtonToggle and Options.BhopButtonToggle.Value then
         createBhopGradientButton()
+    end
+        -- ЭТО ДОБАВЬ:
+    if Options.SprintSlideButtonToggle and Options.SprintSlideButtonToggle.Value then
+        createSprintSlideGradientButton()
     end
 end)
 MiscTab:AddSection("Utilities")
