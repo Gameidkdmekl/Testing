@@ -3394,6 +3394,7 @@ InfiniteSlideToggle = MiscTab:AddToggle("InfiniteSlideToggle", {
     Default = false,
     Callback = function(Value)
         setInfiniteSlide(Value)
+        updateSlideButtonText()
     end
 })
 
@@ -3788,6 +3789,60 @@ local function createBhopGradientButton()
     return bhopButtonScreenGui
 end
 
+-- ==================== SPRINT SLIDE BUTTON ====================
+
+local slideButtonScreenGui = nil
+
+local function createSlideGradientButton()
+    local CoreGui = game:GetService("CoreGui")
+    
+    if slideButtonScreenGui then
+        slideButtonScreenGui:Destroy()
+        slideButtonScreenGui = nil
+    end
+    
+    slideButtonScreenGui = Instance.new("ScreenGui")
+    slideButtonScreenGui.Name = "SlideButtonGUI"
+    slideButtonScreenGui.ResetOnSpawn = false
+    slideButtonScreenGui.Parent = CoreGui
+    
+    local buttonSize = 190
+    local btnWidth = math.max(150, math.min(buttonSize, 400))
+    local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
+    
+    local btn, clicker, stroke = createGradientButton(
+        slideButtonScreenGui,
+        UDim2.new(0.5, -btnWidth/2, 0.5, 180), -- Позиция ниже Auto Jump
+        UDim2.new(0, btnWidth, 0, btnHeight),
+        infiniteSlideEnabled and "Sprint Slide: On" or "Sprint Slide: Off"
+    )
+    
+    clicker.MouseButton1Click:Connect(function()
+        infiniteSlideEnabled = not infiniteSlideEnabled
+        
+        if btn:FindFirstChild("TextLabel") then
+            btn.TextLabel.Text = infiniteSlideEnabled and "Sprint Slide: On" or "Sprint Slide: Off"
+        end
+        
+        if Options.InfiniteSlideToggle then
+            Options.InfiniteSlideToggle:SetValue(infiniteSlideEnabled)
+        end
+        
+        setInfiniteSlide(infiniteSlideEnabled)
+    end)
+    
+    return slideButtonScreenGui
+end
+
+local function updateSlideButtonText()
+    if slideButtonScreenGui and slideButtonScreenGui:FindFirstChild("GradientBtn") then
+        local button = slideButtonScreenGui:FindFirstChild("GradientBtn")
+        if button and button:FindFirstChild("TextLabel") then
+            button.TextLabel.Text = infiniteSlideEnabled and "Sprint Slide: On" or "Sprint Slide: Off"
+        end
+    end
+end
+
 local function updateBhopButtonText()
     if bhopButtonScreenGui and bhopButtonScreenGui:FindFirstChild("GradientBtn") then
         local button = bhopButtonScreenGui:FindFirstChild("GradientBtn")
@@ -3864,6 +3919,21 @@ BhopButtonToggle = MiscTab:AddToggle("BhopButtonToggle", {
             if bhopButtonScreenGui then
                 bhopButtonScreenGui:Destroy()
                 bhopButtonScreenGui = nil
+            end
+        end
+    end
+})
+
+SlideButtonToggle = MiscTab:AddToggle("SlideButtonToggle", {
+    Title = "Sprint Slide Button GUI",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            createSlideGradientButton()
+        else
+            if slideButtonScreenGui then
+                slideButtonScreenGui:Destroy()
+                slideButtonScreenGui = nil
             end
         end
     end
@@ -3984,6 +4054,9 @@ task.spawn(function()
     task.wait(1)
     if Options.BhopButtonToggle and Options.BhopButtonToggle.Value then
         createBhopGradientButton()
+    end
+    if Options.SlideButtonToggle and Options.SlideButtonToggle.Value then
+        createSlideGradientButton()
     end
 end)
 MiscTab:AddSection("Utilities")
