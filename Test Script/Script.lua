@@ -3412,10 +3412,154 @@ SlideFrictionInput = MiscTab:AddInput("SlideFrictionInput", {
         end
     end
 })
+-- Добавляем в раздел Movement Modification вкладки Misc после InfiniteSlideToggle
 MiscTab:AddParagraph({
     Title = "",
     Content = ""
 })
+
+-- Создаём кнопку GUI для Sprint Slide
+local slideButtonScreenGui = nil
+
+local function createSlideButton()
+    local CoreGui = game:GetService("CoreGui")
+    
+    if slideButtonScreenGui then
+        slideButtonScreenGui:Destroy()
+        slideButtonScreenGui = nil
+    end
+    
+    slideButtonScreenGui = Instance.new("ScreenGui")
+    slideButtonScreenGui.Name = "SlideButtonGUI"
+    slideButtonScreenGui.ResetOnSpawn = false
+    slideButtonScreenGui.Parent = CoreGui
+    
+    local buttonSize = 190
+    local btnWidth = math.max(150, math.min(buttonSize, 400))
+    local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
+    
+    local btn, clicker, stroke = createGradientButton(
+        slideButtonScreenGui,
+        UDim2.new(0.5, -btnWidth/2, 0.5, 180), -- Изменяем Y позицию, чтобы не перекрывала другие кнопки
+        UDim2.new(0, btnWidth, 0, btnHeight),
+        infiniteSlideEnabled and "Slide:On" or "Slide:Off"
+    )
+    
+    clicker.MouseButton1Click:Connect(function()
+        infiniteSlideEnabled = not infiniteSlideEnabled
+        featureStates.InfiniteSlide = infiniteSlideEnabled
+        
+        if btn:FindFirstChild("TextLabel") then
+            btn.TextLabel.Text = infiniteSlideEnabled and "Slide:On" or "Slide:Off"
+        end
+        
+        if Options.InfiniteSlideToggle then
+            Options.InfiniteSlideToggle:SetValue(infiniteSlideEnabled)
+        end
+        
+        setInfiniteSlide(infiniteSlideEnabled)
+    end)
+    
+    return slideButtonScreenGui
+end
+
+local function updateSlideButtonText()
+    if slideButtonScreenGui and slideButtonScreenGui:FindFirstChild("GradientBtn") then
+        local button = slideButtonScreenGui:FindFirstChild("GradientBtn")
+        if button and button:FindFirstChild("TextLabel") then
+            button.TextLabel.Text = infiniteSlideEnabled and "Slide:On" or "Slide:Off"
+        end
+    end
+end
+
+-- Добавляем тумблер для кнопки GUI
+local SlideButtonToggle = MiscTab:AddToggle("SlideButtonToggle", {
+    Title = "Sprint Slide Button GUI",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            createSlideButton()
+        else
+            if slideButtonScreenGui then
+                slideButtonScreenGui:Destroy()
+                slideButtonScreenGui = nil
+            end
+        end
+    end
+})
+
+-- Добавляем кейбинд для Sprint Slide
+local SlideKeybind = MiscTab:AddKeybind("SlideKeybind", {
+    Title = "Sprint Slide Keybind",
+    Mode = "Toggle",
+    Default = "V",
+    ChangedCallback = function(New)
+        -- Сохраняем значение кейбинда
+    end,
+    Callback = function()
+        infiniteSlideEnabled = not infiniteSlideEnabled
+        featureStates.InfiniteSlide = infiniteSlideEnabled
+        
+        if Options.InfiniteSlideToggle then
+            Options.InfiniteSlideToggle:SetValue(infiniteSlideEnabled)
+        end
+        
+        updateSlideButtonText()
+        setInfiniteSlide(infiniteSlideEnabled)
+    end
+})
+
+-- Обновляем тумблер InfiniteSlideToggle для синхронизации с кнопкой
+InfiniteSlideToggle:OnChanged(function(Value)
+    infiniteSlideEnabled = Value
+    featureStates.InfiniteSlide = Value
+    
+    updateSlideButtonText()
+    
+    -- Синхронизируем с кнопкой GUI если она активна
+    if Options.SlideButtonToggle and Options.SlideButtonToggle.Value then
+        if slideButtonScreenGui and slideButtonScreenGui:FindFirstChild("GradientBtn") then
+            local button = slideButtonScreenGui:FindFirstChild("GradientBtn")
+            if button and button:FindFirstChild("TextLabel") then
+                button.TextLabel.Text = infiniteSlideEnabled and "Slide:On" or "Slide:Off"
+            end
+        end
+    end
+end)
+
+-- Добавляем опцию для изменения размера кнопки
+local SlideButtonSizeInput = MiscTab:AddInput("SlideButtonSizeInput", {
+    Title = "Slide Button Size",
+    Default = "190",
+    Placeholder = "Enter size (150-400)",
+    Numeric = true,
+    Finished = false,
+    Callback = function(Value)
+        if Value and tonumber(Value) then
+            local size = tonumber(Value)
+            local CoreGui = game:GetService("CoreGui")
+            local existingScreenGui = CoreGui:FindFirstChild("SlideButtonGUI")
+            
+            if existingScreenGui then
+                local button = existingScreenGui:FindFirstChild("GradientBtn")
+                if button then
+                    local newWidth = math.max(150, math.min(size, 400))
+                    local newHeight = math.max(60, math.min(size * 0.4, 160))
+                    button.Size = UDim2.new(0, newWidth, 0, newHeight)
+                end
+            end
+        end
+    end
+})
+
+-- Автоматически создаём кнопку если тумблер включен
+task.spawn(function()
+    task.wait(1)
+    if Options.SlideButtonToggle and Options.SlideButtonToggle.Value then
+        createSlideButton()
+    end
+end)
+
 
 local gravityEnabled = false
 local originalGravity = workspace.Gravity
