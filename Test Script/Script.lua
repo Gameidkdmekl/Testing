@@ -65,6 +65,10 @@ local AntiAFKConnection = nil
 local autoWhistleHandle = nil
 local stableCameraInstance = nil
 
+-- Sprint Slide Variables
+local sprintSlideEnabled = false
+local sprintSlideButtonScreenGui = nil
+
 -- Get nextbot names from ReplicatedStorage
 local nextBotNames = {}
 if ReplicatedStorage:FindFirstChild("NPCs") then
@@ -3354,6 +3358,7 @@ end
 
 local function setInfiniteSlide(enabled)
     infiniteSlideEnabled = enabled
+    sprintSlideEnabled = enabled  -- ЭТУ СТРОКУ ДОБАВЬ
 
     if enabled then
         findMovementTables()
@@ -3393,6 +3398,8 @@ InfiniteSlideToggle = MiscTab:AddToggle("InfiniteSlideToggle", {
     Default = false,
     Callback = function(Value)
         setInfiniteSlide(Value)
+        sprintSlideEnabled = Value  -- ЭТУ СТРОКУ ДОБАВЬ
+        updateSprintSlideButtonText()  -- ЭТУ СТРОКУ ДОБАВЬ
     end
 })
 
@@ -3794,6 +3801,56 @@ local function updateBhopButtonText()
             button.TextLabel.Text = getgenv().autoJumpEnabled and "Auto Jump: On" or "Auto Jump: Off"
         end
     end
+end
+
+local function updateSprintSlideButtonText()
+    if sprintSlideButtonScreenGui and sprintSlideButtonScreenGui:FindFirstChild("GradientBtn") then
+        local button = sprintSlideButtonScreenGui:FindFirstChild("GradientBtn")
+        if button and button:FindFirstChild("TextLabel") then
+            button.TextLabel.Text = sprintSlideEnabled and "Sprint Slide: On" or "Sprint Slide: Off"
+        end
+    end
+end
+
+local function createSprintSlideGradientButton()
+    local CoreGui = game:GetService("CoreGui")
+    
+    if sprintSlideButtonScreenGui then
+        sprintSlideButtonScreenGui:Destroy()
+        sprintSlideButtonScreenGui = nil
+    end
+    
+    sprintSlideButtonScreenGui = Instance.new("ScreenGui")
+    sprintSlideButtonScreenGui.Name = "SprintSlideButtonGUI"
+    sprintSlideButtonScreenGui.ResetOnSpawn = false
+    sprintSlideButtonScreenGui.Parent = CoreGui
+    
+    local buttonSize = 190
+    local btnWidth = math.max(150, math.min(buttonSize, 400))
+    local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
+    
+    local btn, clicker, stroke = createGradientButton(
+        sprintSlideButtonScreenGui,
+        UDim2.new(0.5, -btnWidth/2, 0.5, 180),
+        UDim2.new(0, btnWidth, 0, btnHeight),
+        sprintSlideEnabled and "Sprint Slide: On" or "Sprint Slide: Off"
+    )
+    
+    clicker.MouseButton1Click:Connect(function()
+        sprintSlideEnabled = not sprintSlideEnabled
+        
+        if btn:FindFirstChild("TextLabel") then
+            btn.TextLabel.Text = sprintSlideEnabled and "Sprint Slide: On" or "Sprint Slide: Off"
+        end
+        
+        if Options.InfiniteSlideToggle then
+            Options.InfiniteSlideToggle:SetValue(sprintSlideEnabled)
+        end
+        
+        setInfiniteSlide(sprintSlideEnabled)
+    end)
+    
+    return sprintSlideButtonScreenGui
 end
 
 local function setupJumpButton()
