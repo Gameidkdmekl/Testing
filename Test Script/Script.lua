@@ -3412,6 +3412,123 @@ SlideFrictionInput = MiscTab:AddInput("SlideFrictionInput", {
         end
     end
 })
+
+-- Добавить эту кнопку GUI для Infinite Slide
+InfiniteSlideButtonToggle = MiscTab:AddToggle("InfiniteSlideButtonToggle", {
+    Title = "Sprint Slide Button GUI",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            createInfiniteSlideButton()
+        else
+            local CoreGui = game:GetService("CoreGui")
+            local existingScreenGui = CoreGui:FindFirstChild("InfiniteSlideButtonGUI")
+            if existingScreenGui then
+                existingScreenGui:Destroy()
+            end
+        end
+    end
+})
+
+-- Добавить эту функцию для создания кнопки Infinite Slide
+local infiniteSlideButtonScreenGui = nil
+
+local function createInfiniteSlideButton()
+    local CoreGui = game:GetService("CoreGui")
+    
+    if infiniteSlideButtonScreenGui then
+        infiniteSlideButtonScreenGui:Destroy()
+        infiniteSlideButtonScreenGui = nil
+    end
+    
+    infiniteSlideButtonScreenGui = Instance.new("ScreenGui")
+    infiniteSlideButtonScreenGui.Name = "InfiniteSlideButtonGUI"
+    infiniteSlideButtonScreenGui.ResetOnSpawn = false
+    infiniteSlideButtonScreenGui.Parent = CoreGui
+    
+    local buttonSize = 190
+    local btnWidth = math.max(150, math.min(buttonSize, 400))
+    local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
+    
+    local btn, clicker, stroke = createGradientButton(
+        infiniteSlideButtonScreenGui,
+        UDim2.new(0.5, -btnWidth/2, 0.5, 180), -- Позиция ниже других кнопок
+        UDim2.new(0, btnWidth, 0, btnHeight),
+        infiniteSlideEnabled and "Sprint Slide: On" or "Sprint Slide: Off"
+    )
+    
+    clicker.MouseButton1Click:Connect(function()
+        local newValue = not infiniteSlideEnabled
+        setInfiniteSlide(newValue)
+        
+        if btn:FindFirstChild("TextLabel") then
+            btn.TextLabel.Text = newValue and "Sprint Slide: On" or "Sprint Slide: Off"
+        end
+        
+        if Options.InfiniteSlideToggle then
+            Options.InfiniteSlideToggle:SetValue(newValue)
+        end
+    end)
+    
+    return infiniteSlideButtonScreenGui
+end
+
+-- Добавить эту функцию для обновления текста кнопки
+local function updateInfiniteSlideButtonText()
+    if infiniteSlideButtonScreenGui and infiniteSlideButtonScreenGui:FindFirstChild("GradientBtn") then
+        local button = infiniteSlideButtonScreenGui:FindFirstChild("GradientBtn")
+        if button and button:FindFirstChild("TextLabel") then
+            button.TextLabel.Text = infiniteSlideEnabled and "Sprint Slide: On" or "Sprint Slide: Off"
+        end
+    end
+end
+
+-- Обновить функцию setInfiniteSlide для поддержки кнопки
+local originalSetInfiniteSlide = setInfiniteSlide
+function setInfiniteSlide(enabled)
+    infiniteSlideEnabled = enabled
+
+    if enabled then
+        findMovementTables()
+        updatePlayerModel()
+        
+        if not infiniteSlideCharacterConn then
+            infiniteSlideCharacterConn = player.CharacterAdded:Connect(onCharacterAddedSlide)
+        end
+        
+        if player.Character then
+            task.spawn(function()
+                onCharacterAddedSlide(player.Character)
+            end)
+        end
+        
+        if infiniteSlideHeartbeat then infiniteSlideHeartbeat:Disconnect() end
+        infiniteSlideHeartbeat = RunService.Heartbeat:Connect(infiniteSlideHeartbeatFunc)
+        
+    else
+        if infiniteSlideHeartbeat then
+            infiniteSlideHeartbeat:Disconnect()
+            infiniteSlideHeartbeat = nil
+        end
+        
+        if infiniteSlideCharacterConn then
+            infiniteSlideCharacterConn:Disconnect()
+            infiniteSlideCharacterConn = nil
+        end
+        
+        setSlideFriction(5)
+        movementTables = {}
+    end
+    
+    -- Обновляем текст кнопки если она существует
+    updateInfiniteSlideButtonText()
+end
+
+-- Обновить Callback тумблера
+InfiniteSlideToggle:OnChanged(function(Value)
+    setInfiniteSlide(Value)
+end)
+
 MiscTab:AddParagraph({
     Title = "",
     Content = ""
