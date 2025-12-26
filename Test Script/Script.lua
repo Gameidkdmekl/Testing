@@ -2381,6 +2381,122 @@ local InstantReviveToggle = MiscTab:AddToggle("InstantReviveToggle", {
     Default = false
 })
 
+InstantReviveButtonToggle = MiscTab:AddToggle("InstantReviveButtonToggle", {
+    Title = "Instant Revive Button GUI",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            createInstantReviveButton()
+        else
+            if instantReviveButtonScreenGui then
+                instantReviveButtonScreenGui:Destroy()
+                instantReviveButtonScreenGui = nil
+            end
+        end
+    end
+})
+
+InstantReviveKeybind = MiscTab:AddKeybind("InstantReviveKeybind", {
+    Title = "Instant Revive Keybind",
+    Mode = "Toggle",
+    Default = "V",
+    ChangedCallback = function(New)
+        instantReviveKeybindValue = New
+    end,
+    Callback = function()
+        Options.InstantReviveToggle:SetValue(not Options.InstantReviveToggle.Value)
+    end
+})
+
+-- Добавьте эти переменные в начало скрипта с другими переменными или локально здесь:
+local instantReviveButtonScreenGui = nil
+local instantReviveKeybindValue = "V"
+
+-- Функция создания кнопки GUI (аналогичная Auto Jump)
+local function createInstantReviveButton()
+    local CoreGui = game:GetService("CoreGui")
+    
+    if instantReviveButtonScreenGui then
+        instantReviveButtonScreenGui:Destroy()
+        instantReviveButtonScreenGui = nil
+    end
+    
+    instantReviveButtonScreenGui = Instance.new("ScreenGui")
+    instantReviveButtonScreenGui.Name = "InstantReviveButtonGUI"
+    instantReviveButtonScreenGui.ResetOnSpawn = false
+    instantReviveButtonScreenGui.Parent = CoreGui
+    
+    local buttonSize = 190
+    local btnWidth = math.max(150, math.min(buttonSize, 400))
+    local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
+    
+    -- Позиционируем кнопку (можно настроить положение как нужно)
+    local btn, clicker, stroke = createGradientButton(
+        instantReviveButtonScreenGui,
+        UDim2.new(0.5, -btnWidth/2, 0.5, 240), -- Измените Y позицию по вашему усмотрению
+        UDim2.new(0, btnWidth, 0, btnHeight),
+        Options.InstantReviveToggle.Value and "Instant Revive: On" or "Instant Revive: Off"
+    )
+    
+    clicker.MouseButton1Click:Connect(function()
+        Options.InstantReviveToggle:SetValue(not Options.InstantReviveToggle.Value)
+        
+        if btn:FindFirstChild("TextLabel") then
+            btn.TextLabel.Text = Options.InstantReviveToggle.Value and "Instant Revive: On" or "Instant Revive: Off"
+        end
+    end)
+    
+    return instantReviveButtonScreenGui
+end
+
+-- Функция обновления текста кнопки
+local function updateInstantReviveButtonText()
+    if instantReviveButtonScreenGui and instantReviveButtonScreenGui:FindFirstChild("GradientBtn") then
+        local button = instantReviveButtonScreenGui:FindFirstChild("GradientBtn")
+        if button and button:FindFirstChild("TextLabel") then
+            button.TextLabel.Text = Options.InstantReviveToggle.Value and "Instant Revive: On" or "Instant Revive: Off"
+        end
+    end
+end
+
+-- Обновляем текст кнопки при изменении состояния
+InstantReviveToggle:OnChanged(function(Value)
+    updateInstantReviveButtonText()
+end)
+
+-- Автоматическое создание кнопки если тумблер включен
+task.spawn(function()
+    task.wait(1)
+    if Options.InstantReviveButtonToggle and Options.InstantReviveButtonToggle.Value then
+        createInstantReviveButton()
+    end
+end)
+
+-- Добавьте также опцию для изменения размера кнопки (опционально)
+InstantReviveButtonSizeInput = MiscTab:AddInput("InstantReviveButtonSizeInput", {
+    Title = "Button Size Scale",
+    Default = "1.0",
+    Placeholder = "Enter scale (0.5-3.0)",
+    Numeric = true,
+    Finished = false,
+    Callback = function(Value)
+        if Value and tonumber(Value) then
+            local scale = tonumber(Value)
+            local CoreGui = game:GetService("CoreGui")
+            local existingScreenGui = CoreGui:FindFirstChild("InstantReviveButtonGUI")
+            
+            if existingScreenGui then
+                local button = existingScreenGui:FindFirstChild("GradientBtn")
+                if button then
+                    local uiScale = button:FindFirstChild("UIScale") or Instance.new("UIScale")
+                    uiScale.Scale = math.max(0.5, math.min(scale, 3.0))
+                    uiScale.Parent = button
+                end
+            end
+        end
+    end
+})
+
 local ReviveWhileEmoteToggle = MiscTab:AddToggle("ReviveWhileEmoteToggle", {
     Title = "Instant Revive While Emoting",
     Default = false
