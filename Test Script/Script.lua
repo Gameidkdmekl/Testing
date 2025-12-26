@@ -3417,76 +3417,6 @@ SlideFrictionInput = MiscTab:AddInput("SlideFrictionInput", {
         end
     end
 })
-MiscTab:AddParagraph({
-    Title = "",
-    Content = ""
-})
-
--- Функция для создания кнопки Sprint Slide
-local function createInfiniteSlideButton()
-    local CoreGui = game:GetService("CoreGui")
-    
-    if infiniteSlideButtonScreenGui then
-        infiniteSlideButtonScreenGui:Destroy()
-        infiniteSlideButtonScreenGui = nil
-    end
-    
-    infiniteSlideButtonScreenGui = Instance.new("ScreenGui")
-    infiniteSlideButtonScreenGui.Name = "InfiniteSlideButtonGUI"
-    infiniteSlideButtonScreenGui.ResetOnSpawn = false
-    infiniteSlideButtonScreenGui.Parent = CoreGui
-    
-    local buttonSize = 190
-    local btnWidth = math.max(150, math.min(buttonSize, 400))
-    local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
-    
-    local btn, clicker, stroke = createGradientButton(
-        infiniteSlideButtonScreenGui,
-        UDim2.new(0.5, -btnWidth/2, 0.5, 180), -- Позиция ниже других кнопок
-        UDim2.new(0, btnWidth, 0, btnHeight),
-        infiniteSlideEnabled and "Sprint Slide:On" or "Sprint Slide:Off"
-    )
-    
-    clicker.MouseButton1Click:Connect(function()
-        setInfiniteSlide(not infiniteSlideEnabled)
-        
-        -- Обновляем тумблер в UI
-        if Options.InfiniteSlideToggle then
-            Options.InfiniteSlideToggle:SetValue(not infiniteSlideEnabled)
-        end
-        
-        -- Обновляем текст кнопки
-        updateInfiniteSlideButtonText()
-    end)
-    
-    return infiniteSlideButtonScreenGui
-end
-
--- Функция для обновления текста кнопки
-local function updateInfiniteSlideButtonText()
-    if infiniteSlideButtonScreenGui and infiniteSlideButtonScreenGui:FindFirstChild("GradientBtn") then
-        local button = infiniteSlideButtonScreenGui:FindFirstChild("GradientBtn")
-        if button and button:FindFirstChild("TextLabel") then
-            button.TextLabel.Text = infiniteSlideEnabled and "Sprint Slide:On" or "Sprint Slide:Off"
-        end
-    end
-end
-
--- Обновить тумблер для поддержки кнопки
-InfiniteSlideToggle:OnChanged(function(Value)
-    setInfiniteSlide(Value)
-    
-    -- Обновляем текст кнопки
-    updateInfiniteSlideButtonText()
-end)
-
--- Автоматически создаём кнопку если тумблер включён
-task.spawn(function()
-    task.wait(1)
-    if Options.InfiniteSlideButtonToggle and Options.InfiniteSlideButtonToggle.Value then
-        createInfiniteSlideButton()
-    end
-end)
 
 -- Кнопка для Sprint Slide
 InfiniteSlideButtonToggle = MiscTab:AddToggle("InfiniteSlideButtonToggle", {
@@ -3556,6 +3486,77 @@ InfiniteSlideButtonSizeInput = MiscTab:AddInput("InfiniteSlideButtonSizeInput", 
             end
         end
     end
+})
+
+-- Функция для создания кнопки Sprint Slide
+local function createInfiniteSlideButton()
+    local CoreGui = game:GetService("CoreGui")
+    
+    if infiniteSlideButtonScreenGui then
+        infiniteSlideButtonScreenGui:Destroy()
+        infiniteSlideButtonScreenGui = nil
+    end
+    
+    infiniteSlideButtonScreenGui = Instance.new("ScreenGui")
+    infiniteSlideButtonScreenGui.Name = "InfiniteSlideButtonGUI"
+    infiniteSlideButtonScreenGui.ResetOnSpawn = false
+    infiniteSlideButtonScreenGui.Parent = CoreGui
+    
+    local buttonSize = 190
+    local btnWidth = math.max(150, math.min(buttonSize, 400))
+    local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
+    
+    local btn, clicker, stroke = createGradientButton(
+        infiniteSlideButtonScreenGui,
+        UDim2.new(0.5, -btnWidth/2, 0.5, 180), -- Позиция ниже других кнопок
+        UDim2.new(0, btnWidth, 0, btnHeight),
+        infiniteSlideEnabled and "Sprint Slide:On" or "Sprint Slide:Off"
+    )
+    
+    clicker.MouseButton1Click:Connect(function()
+        setInfiniteSlide(not infiniteSlideEnabled)
+        
+        -- Обновляем тумблер в UI
+        if Options.InfiniteSlideToggle then
+            Options.InfiniteSlideToggle:SetValue(not infiniteSlideEnabled)
+        end
+        
+        -- Обновляем текст кнопки
+        updateInfiniteSlideButtonText()
+    end)
+    
+    return infiniteSlideButtonScreenGui
+end
+
+-- Функция для обновления текста кнопки
+local function updateInfiniteSlideButtonText()
+    if infiniteSlideButtonScreenGui and infiniteSlideButtonScreenGui:FindFirstChild("GradientBtn") then
+        local button = infiniteSlideButtonScreenGui:FindFirstChild("GradientBtn")
+        if button and button:FindFirstChild("TextLabel") then
+            button.TextLabel.Text = infiniteSlideEnabled and "Sprint Slide:On" or "Sprint Slide:Off"
+        end
+    end
+end
+
+-- Обновить тумблер для поддержки кнопки
+InfiniteSlideToggle:OnChanged(function(Value)
+    setInfiniteSlide(Value)
+    
+    -- Обновляем текст кнопки
+    updateInfiniteSlideButtonText()
+end)
+
+-- Автоматически создаём кнопку если тумблер включён
+task.spawn(function()
+    task.wait(1)
+    if Options.InfiniteSlideButtonToggle and Options.InfiniteSlideButtonToggle.Value then
+        createInfiniteSlideButton()
+    end
+end)
+
+MiscTab:AddParagraph({
+    Title = "",
+    Content = ""
 })
 
 local gravityEnabled = false
