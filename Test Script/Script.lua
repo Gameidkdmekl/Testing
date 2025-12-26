@@ -3267,6 +3267,54 @@ local RunService = game:GetService("RunService")
 local player = game:GetService("Players").LocalPlayer
 local infiniteSlideKeybindValue = "X"
 local infiniteSlideButtonScreenGui = nil
+-- Функция для обновления текста кнопки
+local function updateInfiniteSlideButtonText()
+    if infiniteSlideButtonScreenGui and infiniteSlideButtonScreenGui:FindFirstChild("GradientBtn") then
+        local button = infiniteSlideButtonScreenGui:FindFirstChild("GradientBtn")
+        if button and button:FindFirstChild("TextLabel") then
+            button.TextLabel.Text = infiniteSlideEnabled and "Sprint Slide:On" or "Sprint Slide:Off"
+        end
+    end
+end
+
+local function setInfiniteSlide(enabled)
+    infiniteSlideEnabled = enabled
+
+    if enabled then
+        findMovementTables()
+        updatePlayerModel()
+        
+        if not infiniteSlideCharacterConn then
+            infiniteSlideCharacterConn = player.CharacterAdded:Connect(onCharacterAddedSlide)
+        end
+        
+        if player.Character then
+            task.spawn(function()
+                onCharacterAddedSlide(player.Character)
+            end)
+        end
+        
+        if infiniteSlideHeartbeat then infiniteSlideHeartbeat:Disconnect() end
+        infiniteSlideHeartbeat = RunService.Heartbeat:Connect(infiniteSlideHeartbeatFunc)
+        
+    else
+        if infiniteSlideHeartbeat then
+            infiniteSlideHeartbeat:Disconnect()
+            infiniteSlideHeartbeat = nil
+        end
+        
+        if infiniteSlideCharacterConn then
+            infiniteSlideCharacterConn:Disconnect()
+            infiniteSlideCharacterConn = nil
+        end
+        
+        setSlideFriction(5)
+        movementTables = {}
+    end
+    
+    -- Обновляем текст кнопки
+    updateInfiniteSlideButtonText()
+end
 
 local requiredKeys = {
     "Friction","AirStrafeAcceleration","JumpHeight","RunDeaccel",
@@ -3353,45 +3401,6 @@ local function onCharacterAddedSlide(character)
     
     task.wait(0.5)
     findMovementTables()
-end
-
-local function setInfiniteSlide(enabled)
-    infiniteSlideEnabled = enabled
-
-    if enabled then
-        findMovementTables()
-        updatePlayerModel()
-        
-        if not infiniteSlideCharacterConn then
-            infiniteSlideCharacterConn = player.CharacterAdded:Connect(onCharacterAddedSlide)
-        end
-        
-        if player.Character then
-            task.spawn(function()
-                onCharacterAddedSlide(player.Character)
-            end)
-        end
-        
-        if infiniteSlideHeartbeat then infiniteSlideHeartbeat:Disconnect() end
-        infiniteSlideHeartbeat = RunService.Heartbeat:Connect(infiniteSlideHeartbeatFunc)
-        
-    else
-        if infiniteSlideHeartbeat then
-            infiniteSlideHeartbeat:Disconnect()
-            infiniteSlideHeartbeat = nil
-        end
-        
-        if infiniteSlideCharacterConn then
-            infiniteSlideCharacterConn:Disconnect()
-            infiniteSlideCharacterConn = nil
-        end
-        
-        setSlideFriction(5)
-        movementTables = {}
-    end
-    
-    -- Обновляем текст кнопки
-    updateInfiniteSlideButtonText()
 end
 
 InfiniteSlideToggle = MiscTab:AddToggle("InfiniteSlideToggle", {
@@ -3526,16 +3535,6 @@ local function createInfiniteSlideButton()
     end)
     
     return infiniteSlideButtonScreenGui
-end
-
--- Функция для обновления текста кнопки
-local function updateInfiniteSlideButtonText()
-    if infiniteSlideButtonScreenGui and infiniteSlideButtonScreenGui:FindFirstChild("GradientBtn") then
-        local button = infiniteSlideButtonScreenGui:FindFirstChild("GradientBtn")
-        if button and button:FindFirstChild("TextLabel") then
-            button.TextLabel.Text = infiniteSlideEnabled and "Sprint Slide:On" or "Sprint Slide:Off"
-        end
-    end
 end
 
 -- Обновить тумблер для поддержки кнопки
