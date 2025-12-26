@@ -3416,6 +3416,106 @@ MiscTab:AddParagraph({
     Content = ""
 })
 
+-- В разделе MiscTab:AddSection("Movement Modification") ДОБАВИТЬ после кода InfiniteSlideToggle:
+
+MiscTab:AddParagraph({
+    Title = "",
+    Content = ""
+})
+
+-- Добавить переключатель для кнопки Sprint Slide GUI
+SprintSlideButtonToggle = MiscTab:AddToggle("SprintSlideButtonToggle", {
+    Title = "Sprint Slide Button GUI",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            createSprintSlideButton()
+        else
+            if sprintSlideButtonScreenGui then
+                sprintSlideButtonScreenGui:Destroy()
+                sprintSlideButtonScreenGui = nil
+            end
+        end
+    end
+})
+
+-- Добавить кнопку Sprint Slide GUI
+local sprintSlideButtonScreenGui = nil
+
+local function createSprintSlideButton()
+    local CoreGui = game:GetService("CoreGui")
+    
+    if sprintSlideButtonScreenGui then
+        sprintSlideButtonScreenGui:Destroy()
+        sprintSlideButtonScreenGui = nil
+    end
+    
+    sprintSlideButtonScreenGui = Instance.new("ScreenGui")
+    sprintSlideButtonScreenGui.Name = "SprintSlideButtonGUI"
+    sprintSlideButtonScreenGui.ResetOnSpawn = false
+    sprintSlideButtonScreenGui.Parent = CoreGui
+    
+    local buttonSize = 190
+    local btnWidth = math.max(150, math.min(buttonSize, 400))
+    local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
+    
+    local btn, clicker, stroke = createGradientButton(
+        sprintSlideButtonScreenGui,
+        UDim2.new(0.5, -btnWidth/2, 0.5, 180), -- Размещаем ниже других кнопок
+        UDim2.new(0, btnWidth, 0, btnHeight),
+        infiniteSlideEnabled and "Sprint Slide:On" or "Sprint Slide:Off"
+    )
+    
+    clicker.MouseButton1Click:Connect(function()
+        infiniteSlideEnabled = not infiniteSlideEnabled
+        
+        if btn:FindFirstChild("TextLabel") then
+            btn.TextLabel.Text = infiniteSlideEnabled and "Sprint Slide:On" or "Sprint Slide:Off"
+        end
+        
+        -- Обновляем состояние тумблера в интерфейсе
+        if Options.InfiniteSlideToggle then
+            Options.InfiniteSlideToggle:SetValue(infiniteSlideEnabled)
+        end
+        
+        -- Включаем/выключаем Sprint Slide
+        setInfiniteSlide(infiniteSlideEnabled)
+    end)
+    
+    return sprintSlideButtonScreenGui
+end
+
+-- Функция для обновления текста кнопки
+local function updateSprintSlideButtonText()
+    if sprintSlideButtonScreenGui and sprintSlideButtonScreenGui:FindFirstChild("GradientBtn") then
+        local button = sprintSlideButtonScreenGui:FindFirstChild("GradientBtn")
+        if button and button:FindFirstChild("TextLabel") then
+            button.TextLabel.Text = infiniteSlideEnabled and "Sprint Slide:On" or "Sprint Slide:Off"
+        end
+    end
+end
+
+-- Обновляем тумблер InfiniteSlideToggle чтобы он синхронизировался с кнопкой
+local originalInfiniteSlideCallback = InfiniteSlideToggle.Callback
+InfiniteSlideToggle:SetCallback(function(Value)
+    infiniteSlideEnabled = Value
+    setInfiniteSlide(Value)
+    updateSprintSlideButtonText()
+end)
+
+-- Автоматически создаём кнопку при загрузке
+task.spawn(function()
+    task.wait(1)
+    if Options.SprintSlideButtonToggle and Options.SprintSlideButtonToggle.Value then
+        createSprintSlideButton()
+    end
+end)
+
+MiscTab:AddParagraph({
+    Title = "Heads up: Turn off infinite slide when bhopping to get better trims blah blah blah",
+    Content = ""
+})
+
 local gravityEnabled = false
 local originalGravity = workspace.Gravity
 local gravityValue = 10
