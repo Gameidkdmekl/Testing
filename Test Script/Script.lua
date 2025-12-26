@@ -3257,6 +3257,7 @@ ResetEmoteSpeedButton = MiscTab:AddButton({
     end
 })
 
+-- После этих строк:
 local infiniteSlideEnabled = false
 local slideFrictionValue = -8
 local movementTables = {}
@@ -3264,6 +3265,98 @@ local infiniteSlideHeartbeat = nil
 local infiniteSlideCharacterConn = nil
 local RunService = game:GetService("RunService")
 local player = game:GetService("Players").LocalPlayer
+
+-- ВСТАВЬТЕ ЭТОТ КОД:
+local infiniteSlideButtonScreenGui = nil
+
+local function createInfiniteSlideButton()
+    local CoreGui = game:GetService("CoreGui")
+    
+    if infiniteSlideButtonScreenGui then
+        infiniteSlideButtonScreenGui:Destroy()
+        infiniteSlideButtonScreenGui = nil
+    end
+    
+    infiniteSlideButtonScreenGui = Instance.new("ScreenGui")
+    infiniteSlideButtonScreenGui.Name = "InfiniteSlideButtonGUI"
+    infiniteSlideButtonScreenGui.ResetOnSpawn = false
+    infiniteSlideButtonScreenGui.Parent = CoreGui
+    
+    local buttonSize = 190
+    if Options.InfiniteSlideButtonSizeInput and Options.InfiniteSlideButtonSizeInput.Value and tonumber(Options.InfiniteSlideButtonSizeInput.Value) then
+        buttonSize = tonumber(Options.InfiniteSlideButtonSizeInput.Value)
+    end
+    
+    local btnWidth = math.max(150, math.min(buttonSize, 400))
+    local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
+    
+    local btn, clicker, stroke = createGradientButton(
+        infiniteSlideButtonScreenGui,
+        UDim2.new(0.5, -btnWidth/2, 0.5, 180),
+        UDim2.new(0, btnWidth, 0, btnHeight),
+        infiniteSlideEnabled and "Sprint Slide:On" or "Sprint Slide:Off"
+    )
+    
+    local function updateButtonText()
+        if btn and btn:FindFirstChild("TextLabel") then
+            btn.TextLabel.Text = infiniteSlideEnabled and "Sprint Slide:On" or "Sprint Slide:Off"
+        end
+    end
+    
+    updateButtonText()
+    
+    clicker.MouseButton1Click:Connect(function()
+        infiniteSlideEnabled = not infiniteSlideEnabled
+        updateButtonText()
+        
+        if infiniteSlideEnabled then
+            setInfiniteSlide(true)
+            if Options.InfiniteSlideToggle then
+                Options.InfiniteSlideToggle:SetValue(true)
+            end
+        else
+            setInfiniteSlide(false)
+            if Options.InfiniteSlideToggle then
+                Options.InfiniteSlideToggle:SetValue(false)
+            end
+        end
+    end)
+    
+    clicker.MouseEnter:Connect(function()
+        stroke.Color = Color3.fromRGB(0, 170, 255)
+    end)
+
+    clicker.MouseLeave:Connect(function()
+        stroke.Color = Color3.fromRGB(0, 85, 255)
+    end)
+    
+    InfiniteSlideToggle:OnChanged(function(state)
+        infiniteSlideEnabled = state
+        updateButtonText()
+        
+        if state then
+            setInfiniteSlide(true)
+        else
+            setInfiniteSlide(false)
+        end
+    end)
+    
+    return infiniteSlideButtonScreenGui
+end
+
+-- Сохраняем оригинальную функцию и добавляем обновление кнопки
+local originalSetInfiniteSlide = setInfiniteSlide
+setInfiniteSlide = function(enabled)
+    originalSetInfiniteSlide(enabled)
+    
+    -- Обновляем текст кнопки если она существует
+    if infiniteSlideButtonScreenGui and infiniteSlideButtonScreenGui:FindFirstChild("GradientBtn") then
+        local button = infiniteSlideButtonScreenGui:FindFirstChild("GradientBtn")
+        if button and button:FindFirstChild("TextLabel") then
+            button.TextLabel.Text = enabled and "Sprint Slide:On" or "Sprint Slide:Off"
+        end
+    end
+end
 
 local requiredKeys = {
     "Friction","AirStrafeAcceleration","JumpHeight","RunDeaccel",
@@ -3411,6 +3504,48 @@ SlideFrictionInput = MiscTab:AddInput("SlideFrictionInput", {
         end
     end
 })
+
+-- ВСТАВЬТЕ ЭТОТ КОД:
+InfiniteSlideButtonToggle = MiscTab:AddToggle("InfiniteSlideButtonToggle", {
+    Title = "Sprint Slide Button GUI",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            createInfiniteSlideButton()
+        else
+            local CoreGui = game:GetService("CoreGui")
+            local existingScreenGui = CoreGui:FindFirstChild("InfiniteSlideButtonGUI")
+            if existingScreenGui then
+                existingScreenGui:Destroy()
+            end
+        end
+    end
+})
+
+InfiniteSlideButtonSizeInput = MiscTab:AddInput("InfiniteSlideButtonSizeInput", {
+    Title = "Sprint Slide Button Size",
+    Default = "190",
+    Placeholder = "Enter size (150-400)",
+    Numeric = true,
+    Finished = false,
+    Callback = function(Value)
+        if Value and tonumber(Value) then
+            local size = tonumber(Value)
+            local CoreGui = game:GetService("CoreGui")
+            local existingScreenGui = CoreGui:FindFirstChild("InfiniteSlideButtonGUI")
+            
+            if existingScreenGui then
+                local button = existingScreenGui:FindFirstChild("GradientBtn")
+                if button then
+                    local newWidth = math.max(150, math.min(size, 400))
+                    local newHeight = math.max(60, math.min(size * 0.4, 160))
+                    button.Size = UDim2.new(0, newWidth, 0, newHeight)
+                end
+            end
+        end
+    end
+})
+
 MiscTab:AddParagraph({
     Title = "",
     Content = ""
