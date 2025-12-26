@@ -1,3 +1,4 @@
+game:GetService("Players").LocalPlayer.PlayerGui.DraconicHubGui:Destroy()
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "🎄Draconic Hub X🎄",
     Text = "Welcome Draconic Hub Remake",
@@ -8,7 +9,7 @@ local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/d
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 local Window = Fluent:CreateWindow({
     Title = "🎄Draconic-X-Remake🎄",
-    SubTitle = "Overhaul (1.5 Version) Made by Unknownproooolucky",
+    SubTitle = "Overhaul (1.6 Version) Made by Unknownproooolucky",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
     Acrylic = true,
