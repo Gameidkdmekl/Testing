@@ -3277,6 +3277,81 @@ local function updateInfiniteSlideButtonText()
     end
 end
 
+-- Добавьте эти функции ПЕРЕД setInfiniteSlide()
+
+local function findMovementTables()
+    movementTables = {}
+    for _, obj in ipairs(getgc(true)) do
+        if type(obj) == "table" and rawget(obj, "Friction") then
+            table.insert(movementTables, {obj = obj, original = obj.Friction})
+        end
+    end
+    return #movementTables > 0
+end
+
+local function updatePlayerModel()
+    local gameFolder = workspace:FindFirstChild("Game")
+    if not gameFolder then return false end
+    
+    local playersFolder = gameFolder:FindFirstChild("Players")
+    if not playersFolder then return false end
+    
+    local playerModel = playersFolder:FindFirstChild(player.Name)
+    return playerModel
+end
+
+local function onCharacterAddedSlide(character)
+    if not infiniteSlideEnabled then return end
+    
+    for i = 1, 5 do
+        task.wait(0.5)
+        if updatePlayerModel() then
+            break
+        end
+    end
+    
+    task.wait(0.5)
+    findMovementTables()
+end
+
+local function infiniteSlideHeartbeatFunc()
+    if not infiniteSlideEnabled then return end
+    
+    local playerModel = updatePlayerModel()
+    if not playerModel then return end
+    
+    local state = playerModel:GetAttribute("State")
+    
+    if state == "Slide" then
+        pcall(function()
+            playerModel:SetAttribute("State", "EmotingSlide")
+        end)
+    elseif state == "EmotingSlide" then
+        setSlideFriction(slideFrictionValue)
+    else
+        setSlideFriction(5)
+    end
+end
+
+local function setSlideFriction(value)
+    local appliedCount = 0
+    for _, tbl in ipairs(movementTables) do
+        pcall(function()
+            tbl.Friction = value
+            appliedCount = appliedCount + 1
+        end)
+    end
+    if appliedCount == 0 then
+        for _, obj in ipairs(getgc(true)) do
+            if type(obj) == "table" and rawget(obj, "Friction") then
+                pcall(function()
+                    obj.Friction = value
+                end)
+            end
+        end
+    end
+end
+
 local function setInfiniteSlide(enabled)
     infiniteSlideEnabled = enabled
 
