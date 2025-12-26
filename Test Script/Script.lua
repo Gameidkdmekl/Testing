@@ -2504,6 +2504,119 @@ ReviveDelaySlider:OnChanged(function(value)
     getgenv().InstantReviveDelay = value
     InstantReviveModule.SetDelay(value)
 end)
+
+local reviveButtonScreenGui = nil
+
+local function createReviveGradientButton()
+    local CoreGui = game:GetService("CoreGui")
+    
+    if reviveButtonScreenGui then
+        reviveButtonScreenGui:Destroy()
+        reviveButtonScreenGui = nil
+    end
+    
+    reviveButtonScreenGui = Instance.new("ScreenGui")
+    reviveButtonScreenGui.Name = "ReviveButtonGUI"
+    reviveButtonScreenGui.ResetOnSpawn = false
+    reviveButtonScreenGui.Parent = CoreGui
+    
+    local buttonSize = 190
+    local btnWidth = math.max(150, math.min(buttonSize, 400))
+    local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
+    
+    -- Позиционируем кнопку между Auto Jump и Sprint Slide кнопками
+    local btn, clicker, stroke = createGradientButton(
+        reviveButtonScreenGui,
+        UDim2.new(0.5, -btnWidth/2, 0.5, 150), -- Позиция между кнопками
+        UDim2.new(0, btnWidth, 0, btnHeight),
+        featureStates.InstantReviveEnabled and "Instant Revive: On" or "Instant Revive: Off"
+    )
+    
+    clicker.MouseButton1Click:Connect(function()
+        local currentState = not featureStates.InstantReviveEnabled
+        featureStates.InstantReviveEnabled = currentState
+        
+        -- Включаем/выключаем Instant Revive
+        if currentState then
+            InstantReviveModule.SetDelay(getgenv().InstantReviveDelay)
+            InstantReviveModule.Start()
+        else
+            InstantReviveModule.Stop()
+        end
+        
+        -- Обновляем текст кнопки
+        if btn:FindFirstChild("TextLabel") then
+            btn.TextLabel.Text = currentState and "Instant Revive: On" or "Instant Revive: Off"
+        end
+        
+        -- Синхронизируем с тумблером
+        if Options.InstantReviveToggle then
+            Options.InstantReviveToggle:SetValue(currentState)
+        end
+    end)
+    
+    return reviveButtonScreenGui
+end
+
+local function updateReviveButtonText()
+    if reviveButtonScreenGui and reviveButtonScreenGui:FindFirstChild("GradientBtn") then
+        local button = reviveButtonScreenGui:FindFirstChild("GradientBtn")
+        if button and button:FindFirstChild("TextLabel") then
+            button.TextLabel.Text = featureStates.InstantReviveEnabled and "Instant Revive: On" or "Instant Revive: Off"
+        end
+    end
+end
+
+-- Инициализируем состояние
+featureStates.InstantReviveEnabled = false
+
+-- Добавляем тумблер для кнопки GUI в MiscTab (после секции Movement Modification)
+MiscTab:AddSection("Revive GUI Button")
+
+ReviveButtonToggle = MiscTab:AddToggle("ReviveButtonToggle", {
+    Title = "Instant Revive Button GUI",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            createReviveGradientButton()
+        else
+            if reviveButtonScreenGui then
+                reviveButtonScreenGui:Destroy()
+                reviveButtonScreenGui = nil
+            end
+        end
+    end
+})
+
+-- Добавляем клавишу для быстрого переключения
+ReviveKeybind = MiscTab:AddKeybind("ReviveKeybind", {
+    Title = "Instant Revive Keybind",
+    Mode = "Toggle",
+    Default = "F4", -- Или любая другая свободная клавиша
+    ChangedCallback = function(New)
+        -- Опционально: можно сохранить значение
+    end,
+    Callback = function()
+        local newState = not featureStates.InstantReviveEnabled
+        featureStates.InstantReviveEnabled = newState
+        
+        -- Включаем/выключаем Instant Revive
+        if newState then
+            InstantReviveModule.SetDelay(getgenv().InstantReviveDelay)
+            InstantReviveModule.Start()
+        else
+            InstantReviveModule.Stop()
+        end
+        
+        -- Обновляем GUI
+        if Options.InstantReviveToggle then
+            Options.InstantReviveToggle:SetValue(newState)
+        end
+        
+        updateReviveButtonText()
+    end
+})
+
 MiscTab:AddParagraph({
     Title = "",
     Content = ""
