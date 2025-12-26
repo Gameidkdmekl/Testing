@@ -39,13 +39,17 @@ local VirtualUser = game:GetService("VirtualUser")
 local LocalPlayer = Players.LocalPlayer
 
 -- Billboard ESP Variables
+-- НЕ УДАЛЯТЬ:
 local NextbotBillboards = {}
--- local PlayerBillboards = {} <-- УДАЛЕНО
+local nextbotLoop = nil
 local TicketBillboards = {}
 
 -- ДОБАВИТЬ ЭТИ СТРОКИ ГДЕ-ТО ПОСЛЕ ТАКИХ ПЕРЕМЕННЫХ:
 local ExternalESP = nil
 local ExternalESPLoaded = false
+
+local ExternalNextbotESP = nil
+local ExternalNextbotESPLoaded = false
 
 -- Tracer ESP Variables
 local playerTracerElements = {}
@@ -166,50 +170,45 @@ function DestroyBillboardESP(Name, Part)
 end
 
 local function scanForNextbots()
-    local nextbots = {}
-    
-    local playersFolder = workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Players")
-    if playersFolder then
-        for _, model in ipairs(playersFolder:GetChildren()) do
-            if model:IsA("Model") and isNextbotModel(model) then
-                local hrp = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Head")
-                if hrp then
-                    nextbots[model] = hrp
+    -- Если включен внешний Nextbot ESP, используем его
+    if ExternalNextbotESPLoaded and _G.UpdateNextbotESP then
+        pcall(_G.UpdateNextbotESP)
+    else
+        -- Стандартная логика (резервная)
+        local nextbots = {}
+        
+        local playersFolder = workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Players")
+        if playersFolder then
+            for _, model in ipairs(playersFolder:GetChildren()) do
+                if model:IsA("Model") and isNextbotModel(model) then
+                    local hrp = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Head")
+                    if hrp then
+                        nextbots[model] = hrp
+                    end
                 end
             end
         end
-    end
-    
-    local npcsFolder = workspace:FindFirstChild("NPCs")
-    if npcsFolder then
-        for _, model in ipairs(npcsFolder:GetChildren()) do
-            if model:IsA("Model") and isNextbotModel(model) then
-                local hrp = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Head")
-                if hrp then
-                    nextbots[model] = hrp
+        
+        local npcsFolder = workspace:FindFirstChild("NPCs")
+        if npcsFolder then
+            for _, model in ipairs(npcsFolder:GetChildren()) do
+                if model:IsA("Model") and isNextbotModel(model) then
+                    local hrp = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Head")
+                    if hrp then
+                        nextbots[model] = hrp
+                    end
                 end
             end
         end
-    end
-    
-    for model, hrp in pairs(nextbots) do
-        if not NextbotBillboards[model] then
-            local esp = CreateBillboardESP("NextbotESP", hrp, Color3.fromRGB(255, 0, 0), 16)
-            if esp then
-                UpdateBillboardESP("NextbotESP", hrp, model.Name, Color3.fromRGB(255, 0, 0), 16)
-                NextbotBillboards[model] = {esp = esp, hrp = hrp}
+        
+        -- Очистка старых ESP
+        for model, data in pairs(NextbotBillboards) do
+            if not nextbots[model] or not model.Parent then
+                if data.hrp then
+                    DestroyBillboardESP("NextbotESP", data.hrp)
+                end
+                NextbotBillboards[model] = nil
             end
-        else
-            UpdateBillboardESP("NextbotESP", hrp, model.Name, Color3.fromRGB(255, 0, 0), 16)
-        end
-    end
-    
-    for model, data in pairs(NextbotBillboards) do
-        if not nextbots[model] or not model.Parent then
-            if data.hrp then
-                DestroyBillboardESP("NextbotESP", data.hrp)
-            end
-            NextbotBillboards[model] = nil
         end
     end
 end
@@ -707,6 +706,36 @@ local ticketLoop
 
 NextbotToggle:OnChanged(function(value)
     if value then
+        -- Загружаем внешний Nextbot ESP
+        if not ExternalNextbotESPLoaded then
+            local success, errorMsg = pcall(function()
+                -- Загружаем внешний Nextbot ESP
+                ExternalNextbotESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Test%20Script/NextbotESP.lua"))()
+                ExternalNextbotESPLoaded = true
+                
+                -- Гарантируем, что ESP работает
+                _G.NextbotESPRunning = true
+                
+                Fluent:Notify({
+                    Title = "ESP Nextbots",
+                    Content = "External Nextbot ESP loaded!",
+                    Duration = 3
+                })
+            end)
+            
+            if not success then
+                Fluent:Notify({
+                    Title = "ESP Nextbots Error",
+                    Content = "Failed to load external Nextbot ESP: " .. tostring(errorMsg),
+                    Duration = 5
+                })
+            end
+        else
+            -- Если уже загружен, включаем
+            _G.NextbotESPRunning = true
+        end
+        
+        -- Запускаем loop
         if not nextbotLoop then
             nextbotLoop = RunService.RenderStepped:Connect(function()
                 if Options.NextbotToggle.Value then
@@ -715,17 +744,35 @@ NextbotToggle:OnChanged(function(value)
             end)
         end
     else
+        -- Отключаем внешний Nextbot ESP
+        if ExternalNextbotESPLoaded then
+            if _G.StopNextbotESP then
+                pcall(_G.StopNextbotESP)
+            end
+        end
+        
+        -- Останавливаем loop
         if nextbotLoop then
             nextbotLoop:Disconnect()
             nextbotLoop = nil
         end
         
+        -- Очищаем стандартные ESP
         for model, data in pairs(NextbotBillboards) do
             if data.hrp then
                 DestroyBillboardESP("NextbotESP", data.hrp)
             end
         end
         NextbotBillboards = {}
+        
+        ExternalNextbotESPLoaded = false
+        _G.NextbotESPRunning = false
+        
+        Fluent:Notify({
+            Title = "ESP Nextbots",
+            Content = "Nextbot ESP disabled!",
+            Duration = 3
+        })
     end
 end)
 
@@ -6115,6 +6162,25 @@ end
 
 -- Автоматически создаём таймер
 createSimpleTimer()
+
+-- Восстановление Nextbot ESP при респавне
+LocalPlayer.CharacterAdded:Connect(function()
+    if Options.NextbotToggle and Options.NextbotToggle.Value then
+        task.wait(2)
+        
+        if ExternalNextbotESPLoaded and (not _G.NextbotESPRunning or _G.NextbotESPRunning == false) then
+            -- Перезагружаем Nextbot ESP
+            if _G.StopNextbotESP then
+                pcall(_G.StopNextbotESP)
+            end
+            
+            local success = pcall(function()
+                ExternalNextbotESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Test%20Script/NextbotESP.lua"))()
+                _G.NextbotESPRunning = true
+            end)
+        end
+    end
+end)
 -- Автоматическое восстановление ESP при респавне
 LocalPlayer.CharacterAdded:Connect(function()
     if Options.PlayerToggle and Options.PlayerToggle.Value then
