@@ -2381,6 +2381,120 @@ local InstantReviveToggle = MiscTab:AddToggle("InstantReviveToggle", {
     Default = false
 })
 
+-- ==================== INSTANT REVIVE GUI BUTTON ====================
+
+local instantReviveButtonScreenGui = nil
+local instantReviveEnabled = false
+
+local function createInstantReviveGradientButton()
+    local CoreGui = game:GetService("CoreGui")
+    
+    if instantReviveButtonScreenGui then
+        instantReviveButtonScreenGui:Destroy()
+        instantReviveButtonScreenGui = nil
+    end
+    
+    instantReviveButtonScreenGui = Instance.new("ScreenGui")
+    instantReviveButtonScreenGui.Name = "InstantReviveButtonGUI"
+    instantReviveButtonScreenGui.ResetOnSpawn = false
+    instantReviveButtonScreenGui.Parent = CoreGui
+    
+    local buttonSize = 190
+    local btnWidth = math.max(150, math.min(buttonSize, 400))
+    local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
+    
+    -- Позиционируем кнопку рядом с другими кнопками
+    local btn, clicker, stroke = createGradientButton(
+        instantReviveButtonScreenGui,
+        UDim2.new(0.5, -btnWidth/2, 0.5, 240), -- Смещаем ниже других кнопок
+        UDim2.new(0, btnWidth, 0, btnHeight),
+        instantReviveEnabled and "Instant Revive: On" or "Instant Revive: Off"
+    )
+    
+    clicker.MouseButton1Click:Connect(function()
+        instantReviveEnabled = not instantReviveEnabled
+        
+        -- Включаем/выключаем Instant Revive
+        if instantReviveEnabled then
+            InstantReviveModule.SetDelay(getgenv().InstantReviveDelay)
+            InstantReviveModule.Start()
+        else
+            InstantReviveModule.Stop()
+        end
+        
+        -- Обновляем текст кнопки
+        if btn:FindFirstChild("TextLabel") then
+            btn.TextLabel.Text = instantReviveEnabled and "Instant Revive: On" or "Instant Revive: Off"
+        end
+        
+        -- Синхронизируем с основным тумблером
+        if Options.InstantReviveToggle then
+            Options.InstantReviveToggle:SetValue(instantReviveEnabled)
+        end
+    end)
+    
+    return instantReviveButtonScreenGui
+end
+
+local function updateInstantReviveButtonText()
+    if instantReviveButtonScreenGui and instantReviveButtonScreenGui:FindFirstChild("GradientBtn") then
+        local button = instantReviveButtonScreenGui:FindFirstChild("GradientBtn")
+        if button and button:FindFirstChild("TextLabel") then
+            button.TextLabel.Text = instantReviveEnabled and "Instant Revive: On" or "Instant Revive: Off"
+        end
+    end
+end
+
+-- Добавляем тумблер для кнопки GUI в MiscTab в разделе Game Automations
+InstantReviveButtonToggle = MiscTab:AddToggle("InstantReviveButtonToggle", {
+    Title = "Instant Revive Button GUI",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            createInstantReviveGradientButton()
+        else
+            if instantReviveButtonScreenGui then
+                instantReviveButtonScreenGui:Destroy()
+                instantReviveButtonScreenGui = nil
+            end
+        end
+    end
+})
+
+-- Обновляем текст кнопки при изменении состояния Instant Revive
+InstantReviveToggle:OnChanged(function(state)
+    instantReviveEnabled = state
+    updateInstantReviveButtonText()
+end)
+
+-- Добавляем ключ для Instant Revive
+InstantReviveKeybind = MiscTab:AddKeybind("InstantReviveKeybind", {
+    Title = "Instant Revive Keybind",
+    Mode = "Toggle",
+    Default = "R", -- Или любая другая клавиша по умолчанию
+    ChangedCallback = function(New)
+        -- Опционально: можно сохранить значение для отображения
+    end,
+    Callback = function()
+        instantReviveEnabled = not instantReviveEnabled
+        
+        -- Включаем/выключаем Instant Revive
+        if instantReviveEnabled then
+            InstantReviveModule.SetDelay(getgenv().InstantReviveDelay)
+            InstantReviveModule.Start()
+        else
+            InstantReviveModule.Stop()
+        end
+        
+        -- Синхронизируем с тумблером
+        if Options.InstantReviveToggle then
+            Options.InstantReviveToggle:SetValue(instantReviveEnabled)
+        end
+        
+        updateInstantReviveButtonText()
+    end
+})
+
 local ReviveWhileEmoteToggle = MiscTab:AddToggle("ReviveWhileEmoteToggle", {
     Title = "Instant Revive While Emoting",
     Default = false
@@ -2498,6 +2612,9 @@ InstantReviveToggle:OnChanged(function(state)
     else
         InstantReviveModule.Stop()
     end
+    
+    -- Обновляем текст кнопки GUI
+    updateInstantReviveButtonText()
 end)
 
 ReviveDelaySlider:OnChanged(function(value)
