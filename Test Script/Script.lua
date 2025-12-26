@@ -3303,23 +3303,28 @@ local function createInfiniteSlideButton()
         end
     end
     
+    local function toggleSprintSlide()
+        infiniteSlideEnabled = not infiniteSlideEnabled
+        
+        -- ВЫЗЫВАЕМ ФУНКЦИЮ ВКЛЮЧЕНИЯ/ВЫКЛЮЧЕНИЯ
+        if infiniteSlideEnabled then
+            setInfiniteSlide(true)
+        else
+            setInfiniteSlide(false)
+        end
+        
+        updateButtonText()
+        
+        -- СИНХРОНИЗИРУЕМ С ТУМБЛЕРОМ В МЕНЮ
+        if Options.InfiniteSlideToggle then
+            Options.InfiniteSlideToggle:SetValue(infiniteSlideEnabled)
+        end
+    end
+    
     updateButtonText()
     
     clicker.MouseButton1Click:Connect(function()
-        infiniteSlideEnabled = not infiniteSlideEnabled
-        updateButtonText()
-        
-        if infiniteSlideEnabled then
-            setInfiniteSlide(true)
-            if Options.InfiniteSlideToggle then
-                Options.InfiniteSlideToggle:SetValue(true)
-            end
-        else
-            setInfiniteSlide(false)
-            if Options.InfiniteSlideToggle then
-                Options.InfiniteSlideToggle:SetValue(false)
-            end
-        end
+        toggleSprintSlide()
     end)
     
     clicker.MouseEnter:Connect(function()
@@ -3330,33 +3335,23 @@ local function createInfiniteSlideButton()
         stroke.Color = Color3.fromRGB(0, 85, 255)
     end)
     
+    -- ОБРАБОТКА ИЗМЕНЕНИЙ ИЗ МЕНЮ
     InfiniteSlideToggle:OnChanged(function(state)
+        -- Обновляем состояние
         infiniteSlideEnabled = state
-        updateButtonText()
         
+        -- ВЫЗЫВАЕМ ФУНКЦИЮ
         if state then
             setInfiniteSlide(true)
         else
             setInfiniteSlide(false)
         end
+        
+        updateButtonText()
     end)
     
     return infiniteSlideButtonScreenGui
-end
-
--- Сохраняем оригинальную функцию и добавляем обновление кнопки
-local originalSetInfiniteSlide = setInfiniteSlide
-setInfiniteSlide = function(enabled)
-    originalSetInfiniteSlide(enabled)
-    
-    -- Обновляем текст кнопки если она существует
-    if infiniteSlideButtonScreenGui and infiniteSlideButtonScreenGui:FindFirstChild("GradientBtn") then
-        local button = infiniteSlideButtonScreenGui:FindFirstChild("GradientBtn")
-        if button and button:FindFirstChild("TextLabel") then
-            button.TextLabel.Text = enabled and "Sprint Slide:On" or "Sprint Slide:Off"
-        end
     end
-end
 
 local requiredKeys = {
     "Friction","AirStrafeAcceleration","JumpHeight","RunDeaccel",
