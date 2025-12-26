@@ -3412,10 +3412,6 @@ SlideFrictionInput = MiscTab:AddInput("SlideFrictionInput", {
         end
     end
 })
-MiscTab:AddParagraph({
-    Title = "",
-    Content = ""
-})
 
 -- ==================== INFINITE SLIDE GUI BUTTON ====================
 
@@ -3511,6 +3507,11 @@ SlideKeybind = MiscTab:AddKeybind("SlideKeybind", {
         
         updateSlideButtonText()
     end
+})
+
+MiscTab:AddParagraph({
+    Title = "",
+    Content = ""
 })
 
 local gravityEnabled = false
