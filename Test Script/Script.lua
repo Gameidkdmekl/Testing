@@ -6186,3 +6186,10 @@ LocalPlayer.CharacterAdded:Connect(function()
         end
     end
 end)
+
+task.spawn(function()
+    task.wait(1)
+    if Options.InfiniteSlideButtonToggle and Options.InfiniteSlideButtonToggle.Value then
+        createInfiniteSlideButton()
+    end
+end)
