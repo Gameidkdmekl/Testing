@@ -2376,10 +2376,30 @@ BounceInput = MiscTab:AddInput("BounceInput", {
 MiscTab:AddSection("Game Automations")
 
 
-local InstantReviveToggle = MiscTab:AddToggle("InstantReviveToggle", {
+InstantReviveToggle = MiscTab:AddToggle("InstantReviveToggle", {
     Title = "Instant Revive",
-    Default = false
+    Default = false,
+    Callback = function(state)
+        if state then
+            InstantReviveModule.SetDelay(getgenv().InstantReviveDelay)
+            InstantReviveModule.Start()
+        else
+            InstantReviveModule.Stop()
+        end
+        
+        featureStates.InstantReviveEnabled = state
+        -- Обновляем текст кнопки если она существует
+        updateReviveButtonText()
+    end
 })
+
+-- Также обновляем ReviveDelaySlider для синхронизации
+ReviveDelaySlider:OnChanged(function(value)
+    getgenv().InstantReviveDelay = value
+    if featureStates.InstantReviveEnabled then
+        InstantReviveModule.SetDelay(value)
+    end
+end)
 
 local ReviveWhileEmoteToggle = MiscTab:AddToggle("ReviveWhileEmoteToggle", {
     Title = "Instant Revive While Emoting",
