@@ -2530,10 +2530,9 @@ local function createInstantReviveGradientButton()
     local btnWidth = math.max(150, math.min(buttonSize, 400))
     local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
     
-    -- Позиционируем кнопку рядом с другими кнопками
     local btn, clicker, stroke = createGradientButton(
         instantReviveButtonScreenGui,
-        UDim2.new(0.5, -btnWidth/2, 0.5, 240), -- Смещаем ниже других кнопок
+        UDim2.new(0.5, -btnWidth/2, 0.5, 240), -- Смещаем ещё ниже (240 вместо 180)
         UDim2.new(0, btnWidth, 0, btnHeight),
         instantReviveEnabled and "Instant Revive: On" or "Instant Revive: Off"
     )
@@ -2541,22 +2540,21 @@ local function createInstantReviveGradientButton()
     clicker.MouseButton1Click:Connect(function()
         instantReviveEnabled = not instantReviveEnabled
         
-        -- Включаем/выключаем Instant Revive
-        if instantReviveEnabled then
-            InstantReviveModule.SetDelay(getgenv().InstantReviveDelay)
-            InstantReviveModule.Start()
-        else
-            InstantReviveModule.Stop()
-        end
-        
-        -- Обновляем текст кнопки
         if btn:FindFirstChild("TextLabel") then
             btn.TextLabel.Text = instantReviveEnabled and "Instant Revive: On" or "Instant Revive: Off"
         end
         
-        -- Синхронизируем с основным тумблером
+        -- Обновляем тумблер в интерфейсе
         if Options.InstantReviveToggle then
             Options.InstantReviveToggle:SetValue(instantReviveEnabled)
+        end
+        
+        -- Запускаем или останавливаем Instant Revive
+        if instantReviveEnabled then
+            InstantReviveModule.SetDelay(getgenv().InstantReviveDelay or 0.15)
+            InstantReviveModule.Start()
+        else
+            InstantReviveModule.Stop()
         end
     end)
     
@@ -2572,7 +2570,7 @@ local function updateInstantReviveButtonText()
     end
 end
 
--- Добавляем тумблер для кнопки GUI в MiscTab в разделе Game Automations
+-- Добавляем тумблер для кнопки GUI в MiscTab (уже должен быть в секции Game Automations)
 InstantReviveButtonToggle = MiscTab:AddToggle("InstantReviveButtonToggle", {
     Title = "Instant Revive Button GUI",
     Default = false,
@@ -2588,39 +2586,61 @@ InstantReviveButtonToggle = MiscTab:AddToggle("InstantReviveButtonToggle", {
     end
 })
 
--- Обновляем текст кнопки при изменении состояния Instant Revive
+-- Обновляем существующий InstantReviveToggle для синхронизации с кнопкой
+local originalInstantReviveCallback = Options.InstantReviveToggle and Options.InstantReviveToggle.Callback
 InstantReviveToggle:OnChanged(function(state)
     instantReviveEnabled = state
+    
+    -- Обновляем текст кнопки
     updateInstantReviveButtonText()
+    
+    -- Вызываем оригинальный callback если есть
+    if originalInstantReviveCallback then
+        originalInstantReviveCallback(state)
+    end
 end)
 
 -- Добавляем ключ для Instant Revive
 InstantReviveKeybind = MiscTab:AddKeybind("InstantReviveKeybind", {
     Title = "Instant Revive Keybind",
     Mode = "Toggle",
-    Default = "R", -- Или любая другая клавиша по умолчанию
+    Default = "R", -- Клавиша R по умолчанию
     ChangedCallback = function(New)
-        -- Опционально: можно сохранить значение для отображения
+        -- Опционально: можно сохранить значение
     end,
     Callback = function()
         instantReviveEnabled = not instantReviveEnabled
         
-        -- Включаем/выключаем Instant Revive
-        if instantReviveEnabled then
-            InstantReviveModule.SetDelay(getgenv().InstantReviveDelay)
-            InstantReviveModule.Start()
-        else
-            InstantReviveModule.Stop()
-        end
-        
-        -- Синхронизируем с тумблером
         if Options.InstantReviveToggle then
             Options.InstantReviveToggle:SetValue(instantReviveEnabled)
         end
         
         updateInstantReviveButtonText()
+        
+        -- Запускаем или останавливаем Instant Revive
+        if instantReviveEnabled then
+            InstantReviveModule.SetDelay(getgenv().InstantReviveDelay or 0.15)
+            InstantReviveModule.Start()
+        else
+            InstantReviveModule.Stop()
+        end
     end
 })
+
+-- Обновляем ReviveDelaySlider для работы с кнопкой
+local originalReviveDelayCallback = Options.ReviveDelaySlider and Options.ReviveDelaySlider.Callback
+ReviveDelaySlider:OnChanged(function(value)
+    getgenv().InstantReviveDelay = value
+    InstantReviveModule.SetDelay(value)
+    
+    -- Вызываем оригинальный callback если есть
+    if originalReviveDelayCallback then
+        originalReviveDelayCallback(value)
+    end
+end)
+
+-- Инициализируем состояние
+instantReviveEnabled = Options.InstantReviveToggle and Options.InstantReviveToggle.Value or false
 
 MiscTab:AddParagraph({
     Title = "",
