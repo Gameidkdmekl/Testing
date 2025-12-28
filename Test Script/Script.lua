@@ -3308,244 +3308,35 @@ ResetEmoteSpeedButton = MiscTab:AddButton({
     end
 })
 
--- ==================== INFINITE SLIDE (ИСПРАВЛЕННЫЙ) ====================
+-- ==================== SPRINT SLIDE (ВНЕШНИЙ МОДУЛЬ) ====================
 
+-- Загружаем Sprint Slide из внешнего файла
+local SprintSlide = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/SprintSlide.lua"))()
 
-    local playerModel = getPlayerModel()
-    if not playerModel then return end
-    
-    local state = playerModel:GetAttribute("State")
-    
-    -- КРИТИЧЕСКИ ВАЖНАЯ ЧАСТЬ - не удалять!
-    if state == "Slide" then
-        pcall(function()
-            playerModel:SetAttribute("State", "EmotingSlide")
-        end)
-        setSlideFriction(slideFrictionValue)
-    elseif state == "EmotingSlide" then
-        setSlideFriction(slideFrictionValue)
-    else
-        setSlideFriction(5)
-    end
-end
-
--- Обработка появления персонажа
-local function onCharacterAddedSlide()
-    if not infiniteSlideEnabled then return end
-    
-    -- Ждем загрузки модели
-    for i = 1, 10 do
-        task.wait(0.3)
-        if getPlayerModel() then
-            break
-        end
-    end
-    
-    -- Обновляем таблицы движений
-    findMovementTables()
-end
-
--- Включение/выключение функции
-local function setInfiniteSlide(enabled)
-    infiniteSlideEnabled = enabled
-
--- ==================== INFINITE SLIDE (УМНАЯ ОПТИМИЗАЦИЯ) ====================
-
+-- Глобальные переменные для GUI
 local infiniteSlideEnabled = false
 local slideFrictionValue = -8
-local movementTables = {}
-local infiniteSlideHeartbeat = nil
-local infiniteSlideCharacterConn = nil
-local playerModelCache = nil
-local lastStateCheck = 0
-local STATE_CHECK_INTERVAL = 0.1 -- Проверяем состояние раз в 0.1 секунды
+local slideButtonScreenGui = nil
 
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-
--- ОПТИМИЗАЦИЯ: Кэшируем пути для быстрого доступа
-local gameFolderCache = nil
-local playersFolderCache = nil
-
--- Быстрая проверка - ищем только по ключевым полям
-local function isMovementTable(tbl)
-    if type(tbl) ~= "table" then return false end
-    -- Проверяем только 3 ключевых поля вместо 12
-    return rawget(tbl, "Friction") ~= nil and 
-           rawget(tbl, "Speed") ~= nil and 
-           rawget(tbl, "JumpCap") ~= nil
-end
-
--- ОПТИМИЗАЦИЯ: Ищем таблицы только один раз
-local function findMovementTables()
-    if #movementTables > 3 then return true end -- Если уже нашли достаточно
-    
-    movementTables = {}
-    local objects = getgc(true)
-    local foundCount = 0
-    
-    for i = 1, math.min(#objects, 5000) do -- Ограничиваем поиск
-        local obj = objects[i]
-        if isMovementTable(obj) then
-            table.insert(movementTables, {obj = obj, original = obj.Friction})
-            foundCount = foundCount + 1
-            if foundCount >= 4 then break end -- Нашли достаточно
-        end
-    end
-    
-    return #movementTables > 0
-end
-
--- ОПТИМИЗАЦИЯ: Быстрая установка трения
-local function setSlideFriction(value)
-    if #movementTables == 0 and not findMovementTables() then
-        return -- Не нашли таблиц
-    end
-    
-    for i = 1, #movementTables do
-        local e = movementTables[i]
-        if e and e.obj then
-            e.obj.Friction = value
-        end
-    end
-end
-
--- ОПТИМИЗАЦИЯ: Кэшируем модель игрока
-local function getPlayerModel()
-    if playerModelCache and playerModelCache.Parent then
-        return playerModelCache
-    end
-    
-    -- Кэшируем папки для быстрого доступа
-    if not gameFolderCache then
-        gameFolderCache = workspace:FindFirstChild("Game")
-        if not gameFolderCache then return nil end
-    end
-    
-    if not playersFolderCache then
-        playersFolderCache = gameFolderCache:FindFirstChild("Players")
-        if not playersFolderCache then return nil end
-    end
-    
-    playerModelCache = playersFolderCache:FindFirstChild(player.Name)
-    return playerModelCache
-end
-
--- ОПТИМИЗАЦИЯ: Обновляем кэш при изменениях
-local function updatePlayerModelCache()
-    playerModelCache = nil
-    getPlayerModel() -- Обновляем кэш
-end
-
--- ОПТИМИЗАЦИЯ: Heartbeat с интервалами проверки
-local function infiniteSlideHeartbeatFunc(deltaTime)
-    if not infiniteSlideEnabled then return end
-    
-    lastStateCheck = lastStateCheck + deltaTime
-    if lastStateCheck < STATE_CHECK_INTERVAL then return end
-    lastStateCheck = 0
-    
-    local playerModel = getPlayerModel()
-    if not playerModel then return end
-    
-    local state = playerModel:GetAttribute("State")
-    
-    -- КРИТИЧЕСКАЯ ЛОГИКА (не трогаем!)
-    if state == "Slide" then
-        pcall(function()
-            playerModel:SetAttribute("State", "EmotingSlide")
-        end)
-        setSlideFriction(slideFrictionValue)
-    elseif state == "EmotingSlide" then
-        setSlideFriction(slideFrictionValue)
-    else
-        setSlideFriction(5)
-    end
-end
-
--- ОПТИМИЗАЦИЯ: Упрощенная обработка появления персонажа
-local function onCharacterAddedSlide()
-    if not infiniteSlideEnabled then return end
-    
-    -- Сбрасываем кэши
-    playerModelCache = nil
-    gameFolderCache = nil
-    playersFolderCache = nil
-    
-    -- Ждем немного и обновляем таблицы
-    task.wait(1)
-    findMovementTables()
-end
-
--- ОПТИМИЗАЦИЯ: Дебаунс для включения/выключения
-local lastToggleTime = 0
-local TOGGLE_COOLDOWN = 0.5
-
-local function setInfiniteSlide(enabled)
-    local now = tick()
-    if now - lastToggleTime < TOGGLE_COOLDOWN then return end
-    lastToggleTime = now
-    
-    infiniteSlideEnabled = enabled
-
-    if enabled then
-        -- Однократная инициализация
-        findMovementTables()
-        updatePlayerModelCache()
-        
-        -- Подключаем обработчики
-        if not infiniteSlideCharacterConn then
-            infiniteSlideCharacterConn = player.CharacterAdded:Connect(onCharacterAddedSlide)
-            
-            -- Также следим за удалением модели
-            player.CharacterRemoving:Connect(function()
-                playerModelCache = nil
-            end)
-        end
-        
-        -- Запускаем Heartbeat
-        if infiniteSlideHeartbeat then
-            infiniteSlideHeartbeat:Disconnect()
-        end
-        infiniteSlideHeartbeat = RunService.Heartbeat:Connect(infiniteSlideHeartbeatFunc)
-        
-    else
-        -- Останавливаем все
-        if infiniteSlideHeartbeat then
-            infiniteSlideHeartbeat:Disconnect()
-            infiniteSlideHeartbeat = nil
-        end
-        
-        if infiniteSlideCharacterConn then
-            infiniteSlideCharacterConn:Disconnect()
-            infiniteSlideCharacterConn = nil
-        end
-        
-        -- Восстанавливаем трение
-        setSlideFriction(5)
-        
-        -- Очищаем кэши
-        playerModelCache = nil
-        gameFolderCache = nil
-        playersFolderCache = nil
-        movementTables = {}
-    end
-end
-
--- Тумблер
+-- Тумблер Sprint Slide
 InfiniteSlideToggle = MiscTab:AddToggle("InfiniteSlideToggle", {
     Title = "Sprint Slide",
     Default = false,
     Callback = function(Value)
-        setInfiniteSlide(Value)
-        if Options.SlideButtonToggle and Options.SlideButtonToggle.Value then
-            updateSlideButtonText()
+        infiniteSlideEnabled = Value
+        SprintSlide:SetEnabled(Value)
+        
+        -- Обновляем текст кнопки GUI если она есть
+        if slideButtonScreenGui and slideButtonScreenGui:FindFirstChild("GradientBtn") then
+            local button = slideButtonScreenGui:FindFirstChild("GradientBtn")
+            if button and button:FindFirstChild("TextLabel") then
+                button.TextLabel.Text = Value and "Sprint Slide: On" or "Sprint Slide: Off"
+            end
         end
     end
 })
 
--- Ввод значения
+-- Ввод значения трения
 SlideFrictionInput = MiscTab:AddInput("SlideFrictionInput", {
     Title = "Slide Speed (Negative only)",
     Default = "-8",
@@ -3555,16 +3346,85 @@ SlideFrictionInput = MiscTab:AddInput("SlideFrictionInput", {
         local num = tonumber(Value)
         if num then
             slideFrictionValue = num
-            if infiniteSlideEnabled then
-                setSlideFriction(slideFrictionValue)
-            end
+            SprintSlide:SetFriction(num)
         end
     end
 })
 
--- ==================== INFINITE SLIDE GUI BUTTON ====================
+-- ==================== SPRINT SLIDE GUI BUTTON ====================
 
-local slideButtonScreenGui = nil
+local function createGradientButton(parent, position, size, text)
+    local button = Instance.new("Frame")
+    button.Name = "GradientBtn"
+    button.BackgroundTransparency = 0.7
+    button.Size = size
+    button.Position = position
+    button.Draggable = true
+    button.Active = true
+    button.Selectable = true
+    button.Parent = parent
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = button
+
+    -- АНИМИРОВАННЫЙ ГРАДИЕНТ
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),   -- Голубой
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 100, 255)), -- Пурпурный
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 255))    -- Голубой
+    }
+    gradient.Rotation = 0
+    gradient.Parent = button
+
+    -- Анимация вращения градиента
+    local gradientAnimation
+    gradientAnimation = game:GetService("RunService").RenderStepped:Connect(function(delta)
+        gradient.Rotation = (gradient.Rotation + 90 * delta) % 360
+    end)
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(0, 85, 255)
+    stroke.Thickness = 2
+    stroke.Parent = button
+
+    local label = Instance.new("TextLabel")
+    label.Text = text
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextSize = 16
+    label.Font = Enum.Font.GothamBold
+    label.Parent = button
+
+    local clicker = Instance.new("TextButton")
+    clicker.Size = UDim2.new(1, 0, 1, 0)
+    clicker.BackgroundTransparency = 1
+    clicker.Text = ""
+    clicker.ZIndex = 5
+    clicker.Active = false
+    clicker.Selectable = false
+    clicker.Parent = button
+
+    -- Очистка анимации
+    button.Destroying:Connect(function()
+        if gradientAnimation then
+            gradientAnimation:Disconnect()
+        end
+    end)
+
+    -- Эффекты при наведении
+    clicker.MouseEnter:Connect(function()
+        stroke.Color = Color3.fromRGB(0, 170, 255)
+    end)
+
+    clicker.MouseLeave:Connect(function()
+        stroke.Color = Color3.fromRGB(0, 85, 255)
+    end)
+
+    return button, clicker, stroke
+end
 
 local function createSlideGradientButton()
     local CoreGui = game:GetService("CoreGui")
@@ -3583,17 +3443,16 @@ local function createSlideGradientButton()
     local btnWidth = math.max(150, math.min(buttonSize, 400))
     local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
     
-    -- Позиционируем кнопку ниже Auto Jump кнопки
     local btn, clicker, stroke = createGradientButton(
         slideButtonScreenGui,
-        UDim2.new(0.5, -btnWidth/2, 0.5, 180), -- Смещаем вниз от Auto Jump кнопки
+        UDim2.new(0.5, -btnWidth/2, 0.5, 180),
         UDim2.new(0, btnWidth, 0, btnHeight),
         infiniteSlideEnabled and "Sprint Slide: On" or "Sprint Slide: Off"
     )
     
     clicker.MouseButton1Click:Connect(function()
         infiniteSlideEnabled = not infiniteSlideEnabled
-        setInfiniteSlide(infiniteSlideEnabled)
+        SprintSlide:SetEnabled(infiniteSlideEnabled)
         
         if btn:FindFirstChild("TextLabel") then
             btn.TextLabel.Text = infiniteSlideEnabled and "Sprint Slide: On" or "Sprint Slide: Off"
@@ -3616,7 +3475,7 @@ local function updateSlideButtonText()
     end
 end
 
--- Добавляем тумблер для кнопки GUI в MiscTab
+-- Тумблер для GUI кнопки
 SlideButtonToggle = MiscTab:AddToggle("SlideButtonToggle", {
     Title = "Sprint Slide Button GUI",
     Default = false,
@@ -3632,31 +3491,36 @@ SlideButtonToggle = MiscTab:AddToggle("SlideButtonToggle", {
     end
 })
 
--- Обновляем текст кнопки при изменении состояния Sprint Slide
-InfiniteSlideToggle:OnChanged(function(Value)
-    setInfiniteSlide(Value)
-    updateSlideButtonText()
-end)
-
--- Добавляем ключ для Sprint Slide
+-- Keybind для Sprint Slide
 SlideKeybind = MiscTab:AddKeybind("SlideKeybind", {
     Title = "Sprint Slide Keybind",
     Mode = "Toggle",
-    Default = "X", -- Или любая другая клавиша по умолчанию
+    Default = "X",
     ChangedCallback = function(New)
-        -- Опционально: можно сохранить значение для отображения
+        -- Сохраняем новую клавишу
     end,
     Callback = function()
         infiniteSlideEnabled = not infiniteSlideEnabled
-        setInfiniteSlide(infiniteSlideEnabled)
+        SprintSlide:SetEnabled(infiniteSlideEnabled)
+        
+        if slideButtonScreenGui and slideButtonScreenGui:FindFirstChild("GradientBtn") then
+            local button = slideButtonScreenGui:FindFirstChild("GradientBtn")
+            if button and button:FindFirstChild("TextLabel") then
+                button.TextLabel.Text = infiniteSlideEnabled and "Sprint Slide: On" or "Sprint Slide: Off"
+            end
+        end
         
         if Options.InfiniteSlideToggle then
             Options.InfiniteSlideToggle:SetValue(infiniteSlideEnabled)
         end
-        
-        updateSlideButtonText()
     end
 })
+
+-- Обновляем текст кнопки при изменении состояния
+InfiniteSlideToggle:OnChanged(function(Value)
+    infiniteSlideEnabled = Value
+    updateSlideButtonText()
+end)
 
 MiscTab:AddParagraph({
     Title = "",
@@ -3666,46 +3530,7 @@ MiscTab:AddParagraph({
 local gravityEnabled = false
 local originalGravity = workspace.Gravity
 local gravityValue = 10
-local gravityHeartbeat = nil
-local gravityKeybindValue = "G"
 
-local function createGravityButton()
-    local CoreGui = game:GetService("CoreGui")
-    local existingScreenGui = CoreGui:FindFirstChild("GravityButtonGUI")
-    
-    if existingScreenGui then
-        existingScreenGui:Destroy()
-    else
-        local screenGui = Instance.new("ScreenGui")
-        screenGui.Name = "GravityButtonGUI"
-        screenGui.ResetOnSpawn = false
-        screenGui.Parent = CoreGui
-        
-        local buttonSize = 190
-        local btnWidth = math.max(150, math.min(buttonSize, 400))
-        local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
-        
-        local btn, clicker, stroke = createGradientButton(
-            screenGui,
-            UDim2.new(0.5, -btnWidth/2, 0.5, 60),
-            UDim2.new(0, btnWidth, 0, btnHeight),
-            gravityEnabled and "Gravity:On" or "Gravity:Off"
-        )
-        
-        clicker.MouseButton1Click:Connect(function()
-            gravityEnabled = not gravityEnabled
-            if btn:FindFirstChild("TextLabel") then
-                btn.TextLabel.Text = gravityEnabled and "Gravity:On" or "Gravity:Off"
-            end
-            
-            if gravityEnabled then
-                workspace.Gravity = gravityValue
-            else
-                workspace.Gravity = originalGravity
-            end
-        end)
-    end
-end
 
 local function toggleGravity()
     gravityEnabled = not gravityEnabled
