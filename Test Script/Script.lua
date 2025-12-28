@@ -1238,65 +1238,90 @@ end
             screenGui.Parent = CoreGui
             
             local function createGradientButton(parent, position, size, text)
-                local button = Instance.new("Frame")
-                button.Name = "GradientBtn"
-                button.BackgroundTransparency = 0.7
-                button.Size = size
-                button.Position = position
-                button.Draggable = true
-                button.Active = true
-                button.Selectable = true
-                button.Parent = parent
+    local button = Instance.new("Frame")
+    button.Name = "GradientBtn"
+    button.BackgroundTransparency = 0.7
+    button.Size = size
+    button.Position = position
+    button.Draggable = true
+    button.Active = true
+    button.Selectable = true
+    button.Parent = parent
 
-                local corner = Instance.new("UICorner")
-                corner.CornerRadius = UDim.new(1, 0)
-                corner.Parent = button
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = button
 
-                local gradient = Instance.new("UIGradient")
-                gradient.Color = ColorSequence.new{
-                    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),
-                    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
-                }
-                gradient.Rotation = 45
-                gradient.Parent = button
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+    }
+    gradient.Rotation = 0
+    gradient.Parent = button
 
-                local stroke = Instance.new("UIStroke")
-                stroke.Color = Color3.fromRGB(0, 85, 255)
-                stroke.Thickness = 2
-                stroke.Parent = button
+    -- БЕСКОНЕЧНОЕ ВРАЩЕНИЕ ГРАДИЕНТА
+    local RunService = game:GetService("RunService")
+    local connection
+    connection = RunService.RenderStepped:Connect(function(delta)
+        -- Плавное бесконечное вращение (60 градусов в секунду)
+        gradient.Rotation = gradient.Rotation + (60 * delta)
+        
+        -- Обеспечиваем цикличность вращения
+        if gradient.Rotation >= 360 then
+            gradient.Rotation = gradient.Rotation - 360
+        end
+    end)
 
-                local label = Instance.new("TextLabel")
-                label.Text = text
-                label.Size = UDim2.new(1, 0, 1, 0)
-                label.BackgroundTransparency = 1
-                label.TextColor3 = Color3.fromRGB(255, 255, 255)
-                label.TextSize = 16
-                label.Font = Enum.Font.GothamBold
-                label.Parent = button
+    -- Сохраняем connection для очистки при уничтожении
+    button:SetAttribute("RotationConnection", connection)
 
-                local clicker = Instance.new("TextButton")
-                clicker.Size = UDim2.new(1, 0, 1, 0)
-                clicker.BackgroundTransparency = 1
-                clicker.Text = ""
-                clicker.ZIndex = 5
-                clicker.Active = false
-                clicker.Selectable = false
-                clicker.Parent = button
+    -- Автоматическая очистка при уничтожении кнопки
+    button.Destroying:Connect(function()
+        if connection then
+            connection:Disconnect()
+            connection = nil
+        end
+    end)
 
-                clicker.MouseButton1Click:Connect(function()
-                    manualRevive()
-                end)
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(0, 85, 255)
+    stroke.Thickness = 2
+    stroke.Parent = button
 
-                clicker.MouseEnter:Connect(function()
-                    stroke.Color = Color3.fromRGB(0, 170, 255)
-                end)
+    local label = Instance.new("TextLabel")
+    label.Text = text
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextSize = 16
+    label.Font = Enum.Font.GothamBold
+    label.Parent = button
 
-                clicker.MouseLeave:Connect(function()
-                    stroke.Color = Color3.fromRGB(0, 85, 255)
-                end)
+    local clicker = Instance.new("TextButton")
+    clicker.Size = UDim2.new(1, 0, 1, 0)
+    clicker.BackgroundTransparency = 1
+    clicker.Text = ""
+    clicker.ZIndex = 5
+    clicker.Active = false
+    clicker.Selectable = false
+    clicker.Parent = button
 
-                return button, clicker, stroke
-            end
+    -- УДАЛИЛ: Клик хендлер (он должен быть у каждой кнопки свой)
+    -- clicker.MouseButton1Click:Connect(function()
+    --     manualRevive()
+    -- end)
+
+    clicker.MouseEnter:Connect(function()
+        stroke.Color = Color3.fromRGB(0, 170, 255)
+    end)
+
+    clicker.MouseLeave:Connect(function()
+        stroke.Color = Color3.fromRGB(0, 85, 255)
+    end)
+
+    return button, clicker, stroke
+                end
             
             local buttonSize = 190
             if Options.RespawnButtonSizeInput and Options.RespawnButtonSizeInput.Value and tonumber(Options.RespawnButtonSizeInput.Value) then
