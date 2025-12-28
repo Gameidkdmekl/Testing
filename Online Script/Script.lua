@@ -3434,7 +3434,6 @@ local gravityEnabled = false
 local originalGravity = workspace.Gravity
 local gravityValue = 10
 
-
 local function toggleGravity()
     gravityEnabled = not gravityEnabled
     
@@ -3444,8 +3443,21 @@ local function toggleGravity()
         workspace.Gravity = originalGravity
     end
     
+    -- Обновляем текст кнопки если она существует
     if Options.GravityButtonToggle and Options.GravityButtonToggle.Value then
-        createGravityButton()
+        local CoreGui = game:GetService("CoreGui")
+        local screenGui = CoreGui:FindFirstChild("GravityButtonGUI")
+        if screenGui then
+            local button = screenGui:FindFirstChild("GradientBtn")
+            if button and button:FindFirstChild("TextLabel") then
+                button.TextLabel.Text = gravityEnabled and "Gravity:On" or "Gravity:Off"
+            end
+        end
+    end
+    
+    -- Синхронизируем с тумблером
+    if Options.GravityToggle then
+        Options.GravityToggle:SetValue(gravityEnabled)
     end
 end
 
