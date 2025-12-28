@@ -418,7 +418,82 @@ function stopBotTracers()
     botTracerElements = {}
 end
 
- -- ==================== AUTO RESPAWN FUNCTIONS ====================
+-- ==================== AUTO RESPAWN FUNCTIONS ====================
+
+-- Добавим переменную для блокировки античит-системы
+local teleportCooldown = 0
+local lastTeleportTime = 0
+
+local function safeTeleport(character, position)
+    local currentTime = tick()
+    
+    -- Проверяем кулдаун
+    if currentTime - lastTeleportTime < 1 then
+        return false
+    end
+    
+    local hrp = character and character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    
+    -- Плавная телепортация с несколькими попытками
+    local success = false
+    
+    for attempt = 1, 3 do
+        local raycastParams = RaycastParams.new()
+        raycastParams.FilterDescendantsInstances = {character}
+        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+        raycastParams.RespectCanCollide = true
+        
+        -- Проверяем, свободна ли позиция
+        local checkRay = workspace:Raycast(
+            position + Vector3.new(0, 50, 0),
+            Vector3.new(0, -100, 0),
+            raycastParams
+        )
+        
+        local targetPos
+        if checkRay then
+            targetPos = checkRay.Position + Vector3.new(0, 5, 0)
+        else
+            targetPos = position + Vector3.new(0, 5, 0)
+        end
+        
+        -- Мягкая телепортация (изменяем скорость, а не сразу позицию)
+        local humanoid = character:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+        end
+        
+        -- Плавное движение к точке
+        local startPos = hrp.Position
+        local distance = (targetPos - startPos).Magnitude
+        
+        if distance < 100 then
+            -- Если близко, телепортируем сразу
+            hrp.CFrame = CFrame.new(targetPos)
+            success = true
+            break
+        else
+            -- Если далеко, делаем несколько шагов
+            for i = 1, 5 do
+                local lerpPos = startPos:Lerp(targetPos, i/5)
+                hrp.CFrame = CFrame.new(lerpPos)
+                task.wait(0.02)
+            end
+            success = true
+            break
+        end
+        
+        task.wait(0.1)
+    end
+    
+    if success then
+        lastTeleportTime = currentTime
+        print("[Teleport] Successfully teleported to:", position)
+    end
+    
+    return success
+end
 
 local function startAutoRespawn()
     if AutoSelfReviveConnection then
@@ -431,7 +506,7 @@ local function startAutoRespawn()
     local character = LocalPlayer.Character
     if character then
         local humanoid = character:WaitForChild("Humanoid")
-        local hrp = character:WaitFirstChild("HumanoidRootPart")
+        local hrp = character:WaitForChild("HumanoidRootPart")
         
         AutoSelfReviveConnection = character:GetAttributeChangedSignal("Downed"):Connect(function()
             local isDowned = character:GetAttribute("Downed")
@@ -447,61 +522,51 @@ local function startAutoRespawn()
                         end)
                     end
                 elseif SelfReviveMethod == "Fake Revive" then
-                    -- Сохраняем позицию до смерти
+                    -- Сохраняем позицию
                     if hrp then
                         lastSavedPosition = hrp.Position
                         print("[Fake Revive] Saved position:", lastSavedPosition)
                     end
                     
-                    -- Ждем немного для анимации смерти
-                    task.wait(1.5)
+                    -- Ждем немного
+                    task.wait(1)
                     
-                    -- Восстанавливаемся (появится в спавне)
+                    -- Восстанавливаемся
                     pcall(function()
                         ReplicatedStorage.Events.Player.ChangePlayerMode:FireServer(true)
                     end)
                     
-                    -- Ждем нового персонажа
-                    local waitStart = tick()
+                    -- Ожидаем нового персонажа с таймаутом
                     local newCharacter
+                    local startWait = tick()
                     
-                    repeat
+                    while tick() - startWait < 5 do
                         newCharacter = LocalPlayer.Character
                         if newCharacter and newCharacter:FindFirstChild("HumanoidRootPart") then
                             break
                         end
                         task.wait(0.1)
-                    until (tick() - waitStart) > 5
+                    end
                     
-                    -- Телепортируем обратно к сохраненной позиции
+                    -- Если нашли персонажа, телепортируем
                     if newCharacter and newCharacter:FindFirstChild("HumanoidRootPart") and lastSavedPosition then
-                        local newHRP = newCharacter:FindFirstChild("HumanoidRootPart")
-                        local camera = workspace.CurrentCamera
+                        task.wait(0.5) -- Даем время на загрузку
                         
-                        -- Проверяем, не занята ли позиция
-                        local raycastParams = RaycastParams.new()
-                        raycastParams.FilterDescendantsInstances = {newCharacter}
-                        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+                        local success = safeTeleport(newCharacter, lastSavedPosition)
                         
-                        local ray = workspace:Raycast(lastSavedPosition + Vector3.new(0, 10, 0), Vector3.new(0, -20, 0), raycastParams)
-                        local teleportPos
-                        
-                        if ray then
-                            teleportPos = ray.Position + Vector3.new(0, 3, 0)
+                        if success then
+                            Fluent:Notify({
+                                Title = "Fake Revive",
+                                Content = "Successfully revived at your location!",
+                                Duration = 3
+                            })
                         else
-                            teleportPos = lastSavedPosition + Vector3.new(0, 3, 0)
+                            Fluent:Notify({
+                                Title = "Fake Revive",
+                                Content = "Revived but teleport failed",
+                                Duration = 3
+                            })
                         end
-                        
-                        -- Телепортируем
-                        newHRP.CFrame = CFrame.new(teleportPos)
-                        print("[Fake Revive] Teleported to:", teleportPos)
-                        
-                        -- Направляем камеру
-                        if camera then
-                            camera.CFrame = CFrame.new(camera.CFrame.Position, teleportPos)
-                        end
-                        
-                        task.wait(0.5)
                     end
                 end
             end
@@ -510,6 +575,28 @@ local function startAutoRespawn()
     
     respawnConnection = LocalPlayer.CharacterAdded:Connect(function(newChar)
         task.wait(0.5)
+        
+        -- Проверяем, нужно ли телепортировать после респавна
+        if lastSavedPosition and SelfReviveMethod == "Fake Revive" then
+            task.wait(1) -- Даем время на полную загрузку
+            
+            local newHRP = newChar:FindFirstChild("HumanoidRootPart")
+            if newHRP then
+                local success = safeTeleport(newChar, lastSavedPosition)
+                
+                if success then
+                    Fluent:Notify({
+                        Title = "Fake Revive",
+                        Content = "Teleported back to your location",
+                        Duration = 3
+                    })
+                end
+                
+                lastSavedPosition = nil -- Сбрасываем позицию
+            end
+        end
+        
+        -- Подписываемся на следующую смерть
         local newHumanoid = newChar:WaitForChild("Humanoid")
         local newHRP = newChar:WaitForChild("HumanoidRootPart")
         
@@ -530,52 +617,14 @@ local function startAutoRespawn()
                 elseif SelfReviveMethod == "Fake Revive" then
                     if newHRP then
                         lastSavedPosition = newHRP.Position
-                        print("[Fake Revive] Saved position:", lastSavedPosition)
+                        print("[Fake Revive] Saved position for next respawn:", lastSavedPosition)
                     end
                     
-                    task.wait(1.5)
+                    task.wait(1)
                     
                     pcall(function()
                         ReplicatedStorage.Events.Player.ChangePlayerMode:FireServer(true)
                     end)
-                    
-                    local waitStart = tick()
-                    local freshCharacter
-                    
-                    repeat
-                        freshCharacter = LocalPlayer.Character
-                        if freshCharacter and freshCharacter:FindFirstChild("HumanoidRootPart") then
-                            break
-                        end
-                        task.wait(0.1)
-                    until (tick() - waitStart) > 5
-                    
-                    if freshCharacter and freshCharacter:FindFirstChild("HumanoidRootPart") and lastSavedPosition then
-                        local freshHRP = freshCharacter:FindFirstChild("HumanoidRootPart")
-                        local camera = workspace.CurrentCamera
-                        
-                        local raycastParams = RaycastParams.new()
-                        raycastParams.FilterDescendantsInstances = {freshCharacter}
-                        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-                        
-                        local ray = workspace:Raycast(lastSavedPosition + Vector3.new(0, 10, 0), Vector3.new(0, -20, 0), raycastParams)
-                        local teleportPos
-                        
-                        if ray then
-                            teleportPos = ray.Position + Vector3.new(0, 3, 0)
-                        else
-                            teleportPos = lastSavedPosition + Vector3.new(0, 3, 0)
-                        end
-                        
-                        freshHRP.CFrame = CFrame.new(teleportPos)
-                        print("[Fake Revive] Teleported to:", teleportPos)
-                        
-                        if camera then
-                            camera.CFrame = CFrame.new(camera.CFrame.Position, teleportPos)
-                        end
-                        
-                        task.wait(0.5)
-                    end
                 end
             end
         end)
@@ -1264,9 +1313,8 @@ Tabs.Main:AddParagraph({
         end)
         
     elseif SelfReviveMethod == "Fake Revive" then
-        -- Сохраняем текущую позицию
+        -- Сохраняем позицию
         local savePosition = hrp and hrp.Position
-        print("[Manual Fake Revive] Saved position:", savePosition)
         
         if not savePosition then
             Fluent:Notify({
@@ -1277,10 +1325,11 @@ Tabs.Main:AddParagraph({
             return
         end
         
-        -- Ждем немного для анимации
-        task.wait(0.5)
+        print("[Manual Fake Revive] Saving position:", savePosition)
         
         -- Вызываем респавн
+        task.wait(0.3)
+        
         local success = pcall(function()
             ReplicatedStorage.Events.Player.ChangePlayerMode:FireServer(true)
         end)
@@ -1294,9 +1343,9 @@ Tabs.Main:AddParagraph({
             return
         end
         
-        -- Ждем нового персонажа
-        local waitStart = tick()
+        -- Ожидаем нового персонажа
         local newCharacter
+        local waitStart = tick()
         
         while tick() - waitStart < 5 do
             newCharacter = player.Character
@@ -1307,32 +1356,25 @@ Tabs.Main:AddParagraph({
         end
         
         if newCharacter and newCharacter:FindFirstChild("HumanoidRootPart") then
-            local newHRP = newCharacter:FindFirstChild("HumanoidRootPart")
-            
-            -- Проверяем, доступна ли позиция
-            local raycastParams = RaycastParams.new()
-            raycastParams.FilterDescendantsInstances = {newCharacter}
-            raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-            
-            local ray = workspace:Raycast(savePosition + Vector3.new(0, 10, 0), Vector3.new(0, -20, 0), raycastParams)
-            local teleportPos
-            
-            if ray then
-                teleportPos = ray.Position + Vector3.new(0, 3, 0)
-            else
-                teleportPos = savePosition + Vector3.new(0, 3, 0)
-            end
+            -- Даем время на загрузку
+            task.wait(0.5)
             
             -- Телепортируем
-            newHRP.CFrame = CFrame.new(teleportPos)
+            local teleportSuccess = safeTeleport(newCharacter, savePosition)
             
-            Fluent:Notify({
-                Title = "Respawn",
-                Content = "Revived and teleported back to your position!",
-                Duration = 3
-            })
-            
-            print("[Manual Fake Revive] Teleported to:", teleportPos)
+            if teleportSuccess then
+                Fluent:Notify({
+                    Title = "Respawn",
+                    Content = "Successfully revived at your location!",
+                    Duration = 3
+                })
+            else
+                Fluent:Notify({
+                    Title = "Respawn",
+                    Content = "Revived but teleport failed. Try again.",
+                    Duration = 3
+                })
+            end
         else
             Fluent:Notify({
                 Title = "Respawn",
