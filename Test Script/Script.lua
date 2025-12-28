@@ -447,28 +447,48 @@ local function startAutoRespawn()
                         end)
                     end
                 elseif SelfReviveMethod == "Fake Revive" then
+                    -- УБРАТЬ ДЛИТЕЛЬНОЕ ОЖИДАНИЕ (БЫЛО task.wait(3))
                     if hrp then
                         lastSavedPosition = hrp.Position
                     end
-                    task.wait(3)
+                    
+                    -- НЕМЕДЛЕННАЯ ПОПЫТКА РЕСПАВНА
                     local startTime = tick()
-                    repeat
+                    -- Попробовать несколько раз быстро
+                    for i = 1, 5 do
                         pcall(function()
                             ReplicatedStorage:WaitForChild("Events"):WaitForChild("Player"):WaitForChild("ChangePlayerMode"):FireServer(true)
                         end)
-                    until not character:GetAttribute("Downed") or (tick() - startTime > 1)
+                        -- Короткая пауза между попытками
+                        task.wait(0.2)
+                        -- Проверить, не возродились ли уже
+                        if not character:GetAttribute("Downed") or (tick() - startTime > 2) then
+                            break
+                        end
+                    end
+                    
+                    -- Ждем новый персонаж НЕ ДОЛГО
+                    local waitStart = tick()
                     local newCharacter
-                    repeat
+                    while tick() - waitStart < 3 do
                         newCharacter = LocalPlayer.Character
-                        task.wait()
-                    until newCharacter and newCharacter:FindFirstChild("HumanoidRootPart")
-                    local newHRP = newCharacter:FindFirstChild("HumanoidRootPart")
-                    if lastSavedPosition and newHRP then
-                        newHRP.CFrame = CFrame.new(lastSavedPosition)
-                        task.wait(0.5)
-                        local movedDistance = (newHRP.Position - lastSavedPosition).Magnitude
-                        if movedDistance > 1 then
-                            lastSavedPosition = nil
+                        if newCharacter and newCharacter:FindFirstChild("HumanoidRootPart") then
+                            break
+                        end
+                        task.wait(0.1)
+                    end
+                    
+                    -- Если нашли нового персонажа, телепортируем
+                    if newCharacter and newCharacter:FindFirstChild("HumanoidRootPart") then
+                        local newHRP = newCharacter:FindFirstChild("HumanoidRootPart")
+                        if lastSavedPosition and newHRP then
+                            newHRP.CFrame = CFrame.new(lastSavedPosition)
+                            -- Короткая проверка
+                            task.wait(0.2)
+                            local movedDistance = (newHRP.Position - lastSavedPosition).Magnitude
+                            if movedDistance > 5 then -- Увеличил порог
+                                lastSavedPosition = nil
+                            end
                         end
                     end
                 end
@@ -477,7 +497,7 @@ local function startAutoRespawn()
     end
     
     respawnConnection = LocalPlayer.CharacterAdded:Connect(function(newChar)
-        task.wait(1)
+        task.wait(0.5) -- Уменьшил ожидание (было 1)
         local newHumanoid = newChar:WaitForChild("Humanoid")
         local newHRP = newChar:WaitForChild("HumanoidRootPart")
         
@@ -487,7 +507,7 @@ local function startAutoRespawn()
                 if SelfReviveMethod == "Spawnpoint" then
                     if not hasRevived then
                         hasRevived = true
-                        task.wait(3)
+                        task.wait(0.5) -- Уменьшил ожидание (было 3)
                         pcall(function()
                             ReplicatedStorage.Events.Player.ChangePlayerMode:FireServer(true)
                         end)
@@ -499,26 +519,39 @@ local function startAutoRespawn()
                     if newHRP then
                         lastSavedPosition = newHRP.Position
                     end
-                    task.wait(3)
+                    
+                    -- НЕМЕДЛЕННАЯ ПОПЫТКА РЕСПАВНА
                     local startTime = tick()
-                    repeat
+                    for i = 1, 5 do
                         pcall(function()
                             ReplicatedStorage:WaitForChild("Events"):WaitForChild("Player"):WaitForChild("ChangePlayerMode"):FireServer(true)
                         end)
-                        task.wait(1)
-                    until not newChar:GetAttribute("Downed") or (tick() - startTime > 1)
+                        task.wait(0.2)
+                        if not newChar:GetAttribute("Downed") or (tick() - startTime > 2) then
+                            break
+                        end
+                    end
+                    
+                    -- Ждем нового персонажа
+                    local waitStart = tick()
                     local freshCharacter
-                    repeat
+                    while tick() - waitStart < 3 do
                         freshCharacter = LocalPlayer.Character
-                        task.wait()
-                    until freshCharacter and freshCharacter:FindFirstChild("HumanoidRootPart")
-                    local freshHRP = freshCharacter:FindFirstChild("HumanoidRootPart")
-                    if lastSavedPosition and freshHRP then
-                        freshHRP.CFrame = CFrame.new(lastSavedPosition)
-                        task.wait(0.5)
-                        local movedDistance = (freshHRP.Position - lastSavedPosition).Magnitude
-                        if movedDistance > 1 then
-                            lastSavedPosition = nil
+                        if freshCharacter and freshCharacter:FindFirstChild("HumanoidRootPart") then
+                            break
+                        end
+                        task.wait(0.1)
+                    end
+                    
+                    if freshCharacter and freshCharacter:FindFirstChild("HumanoidRootPart") then
+                        local freshHRP = freshCharacter:FindFirstChild("HumanoidRootPart")
+                        if lastSavedPosition and freshHRP then
+                            freshHRP.CFrame = CFrame.new(lastSavedPosition)
+                            task.wait(0.2)
+                            local movedDistance = (freshHRP.Position - lastSavedPosition).Magnitude
+                            if movedDistance > 5 then
+                                lastSavedPosition = nil
+                            end
                         end
                     end
                 end
@@ -1191,28 +1224,37 @@ Tabs.Main:AddParagraph({
             lastSavedPosition = hrp.Position
         end
         
+        -- НЕМЕДЛЕННОЕ ВОССТАНОВЛЕНИЕ БЕЗ ДОЛГОГО ОЖИДАНИЯ
         task.spawn(function()
-            task.wait(3)
+            -- Быстрая попытка респавна
             local startTime = tick()
-            repeat
+            for i = 1, 5 do
                 pcall(function()
                     ReplicatedStorage:WaitForChild("Events"):WaitForChild("Player"):WaitForChild("ChangePlayerMode"):FireServer(true)
                 end)
-                task.wait(1)
-            until not character:GetAttribute("Downed") or (tick() - startTime > 1)
+                task.wait(0.2)
+                if not character:GetAttribute("Downed") or (tick() - startTime > 2) then
+                    break
+                end
+            end
             
+            -- Ждем нового персонажа
+            local waitStart = tick()
             local newCharacter
-            repeat
+            while tick() - waitStart < 3 do
                 newCharacter = player.Character
-                task.wait()
-            until newCharacter and newCharacter:FindFirstChild("HumanoidRootPart")
+                if newCharacter and newCharacter:FindFirstChild("HumanoidRootPart") then
+                    break
+                end
+                task.wait(0.1)
+            end
             
-            local newHRP = newCharacter:FindFirstChild("HumanoidRootPart")
+            local newHRP = newCharacter and newCharacter:FindFirstChild("HumanoidRootPart")
             if lastSavedPosition and newHRP then
                 newHRP.CFrame = CFrame.new(lastSavedPosition)
-                task.wait(0.5)
+                task.wait(0.2)
                 local movedDistance = (newHRP.Position - lastSavedPosition).Magnitude
-                if movedDistance > 1 then
+                if movedDistance > 5 then
                     lastSavedPosition = nil
                 end
             end
