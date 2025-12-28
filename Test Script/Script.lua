@@ -3308,35 +3308,22 @@ ResetEmoteSpeedButton = MiscTab:AddButton({
     end
 })
 
--- ==================== SPRINT SLIDE (ВНЕШНИЙ МОДУЛЬ) ====================
+-- ==================== SPRINT SLIDE (Внешний файл) ====================
 
--- Загружаем Sprint Slide из внешнего файла
-local SprintSlide = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/SprintSlide.lua"))()
+-- Загрузка внешнего модуля Sprint Slide
+local SprintSlideModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/your-username/your-repo/main/SprintSlide.lua"))()
 
--- Глобальные переменные для GUI
-local infiniteSlideEnabled = false
-local slideFrictionValue = -8
-local slideButtonScreenGui = nil
-
--- Тумблер Sprint Slide
+-- Настройка тумблера
 InfiniteSlideToggle = MiscTab:AddToggle("InfiniteSlideToggle", {
     Title = "Sprint Slide",
     Default = false,
     Callback = function(Value)
-        infiniteSlideEnabled = Value
-        SprintSlide:SetEnabled(Value)
-        
-        -- Обновляем текст кнопки GUI если она есть
-        if slideButtonScreenGui and slideButtonScreenGui:FindFirstChild("GradientBtn") then
-            local button = slideButtonScreenGui:FindFirstChild("GradientBtn")
-            if button and button:FindFirstChild("TextLabel") then
-                button.TextLabel.Text = Value and "Sprint Slide: On" or "Sprint Slide: Off"
-            end
-        end
+        SprintSlideModule.setInfiniteSlide(Value)
+        updateSlideButtonText()
     end
 })
 
--- Ввод значения трения
+-- Настройка ввода трения
 SlideFrictionInput = MiscTab:AddInput("SlideFrictionInput", {
     Title = "Slide Speed (Negative only)",
     Default = "-8",
@@ -3345,86 +3332,23 @@ SlideFrictionInput = MiscTab:AddInput("SlideFrictionInput", {
     Callback = function(Value)
         local num = tonumber(Value)
         if num then
-            slideFrictionValue = num
-            SprintSlide:SetFriction(num)
+            SprintSlideModule.setFriction(num)
         end
     end
 })
 
--- ==================== SPRINT SLIDE GUI BUTTON ====================
-
-local function createGradientButton(parent, position, size, text)
-    local button = Instance.new("Frame")
-    button.Name = "GradientBtn"
-    button.BackgroundTransparency = 0.7
-    button.Size = size
-    button.Position = position
-    button.Draggable = true
-    button.Active = true
-    button.Selectable = true
-    button.Parent = parent
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(1, 0)
-    corner.Parent = button
-
-    -- АНИМИРОВАННЫЙ ГРАДИЕНТ
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),   -- Голубой
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 100, 255)), -- Пурпурный
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 255))    -- Голубой
-    }
-    gradient.Rotation = 0
-    gradient.Parent = button
-
-    -- Анимация вращения градиента
-    local gradientAnimation
-    gradientAnimation = game:GetService("RunService").RenderStepped:Connect(function(delta)
-        gradient.Rotation = (gradient.Rotation + 90 * delta) % 360
-    end)
-
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(0, 85, 255)
-    stroke.Thickness = 2
-    stroke.Parent = button
-
-    local label = Instance.new("TextLabel")
-    label.Text = text
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.TextSize = 16
-    label.Font = Enum.Font.GothamBold
-    label.Parent = button
-
-    local clicker = Instance.new("TextButton")
-    clicker.Size = UDim2.new(1, 0, 1, 0)
-    clicker.BackgroundTransparency = 1
-    clicker.Text = ""
-    clicker.ZIndex = 5
-    clicker.Active = false
-    clicker.Selectable = false
-    clicker.Parent = button
-
-    -- Очистка анимации
-    button.Destroying:Connect(function()
-        if gradientAnimation then
-            gradientAnimation:Disconnect()
+-- Функция обновления текста кнопки
+local function updateSlideButtonText()
+    if slideButtonScreenGui and slideButtonScreenGui:FindFirstChild("GradientBtn") then
+        local button = slideButtonScreenGui:FindFirstChild("GradientBtn")
+        if button and button:FindFirstChild("TextLabel") then
+            button.TextLabel.Text = SprintSlideModule.getState() and "Sprint Slide: On" or "Sprint Slide: Off"
         end
-    end)
-
-    -- Эффекты при наведении
-    clicker.MouseEnter:Connect(function()
-        stroke.Color = Color3.fromRGB(0, 170, 255)
-    end)
-
-    clicker.MouseLeave:Connect(function()
-        stroke.Color = Color3.fromRGB(0, 85, 255)
-    end)
-
-    return button, clicker, stroke
+    end
 end
+
+-- Создание GUI кнопки
+local slideButtonScreenGui = nil
 
 local function createSlideGradientButton()
     local CoreGui = game:GetService("CoreGui")
@@ -3443,36 +3367,27 @@ local function createSlideGradientButton()
     local btnWidth = math.max(150, math.min(buttonSize, 400))
     local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
     
-    local btn, clicker, stroke = createGradientButton(
+    -- Позиционируем кнопку ниже Auto Jump кнопки
+    local btn, clicker, stroke = SprintSlideModule.createGradientButton(
         slideButtonScreenGui,
         UDim2.new(0.5, -btnWidth/2, 0.5, 180),
         UDim2.new(0, btnWidth, 0, btnHeight),
-        infiniteSlideEnabled and "Sprint Slide: On" or "Sprint Slide: Off"
+        SprintSlideModule.getState() and "Sprint Slide: On" or "Sprint Slide: Off"
     )
     
     clicker.MouseButton1Click:Connect(function()
-        infiniteSlideEnabled = not infiniteSlideEnabled
-        SprintSlide:SetEnabled(infiniteSlideEnabled)
+        local newState = SprintSlideModule.toggle()
         
         if btn:FindFirstChild("TextLabel") then
-            btn.TextLabel.Text = infiniteSlideEnabled and "Sprint Slide: On" or "Sprint Slide: Off"
+            btn.TextLabel.Text = newState and "Sprint Slide: On" or "Sprint Slide: Off"
         end
         
         if Options.InfiniteSlideToggle then
-            Options.InfiniteSlideToggle:SetValue(infiniteSlideEnabled)
+            Options.InfiniteSlideToggle:SetValue(newState)
         end
     end)
     
     return slideButtonScreenGui
-end
-
-local function updateSlideButtonText()
-    if slideButtonScreenGui and slideButtonScreenGui:FindFirstChild("GradientBtn") then
-        local button = slideButtonScreenGui:FindFirstChild("GradientBtn")
-        if button and button:FindFirstChild("TextLabel") then
-            button.TextLabel.Text = infiniteSlideEnabled and "Sprint Slide: On" or "Sprint Slide: Off"
-        end
-    end
 end
 
 -- Тумблер для GUI кнопки
@@ -3497,30 +3412,18 @@ SlideKeybind = MiscTab:AddKeybind("SlideKeybind", {
     Mode = "Toggle",
     Default = "X",
     ChangedCallback = function(New)
-        -- Сохраняем новую клавишу
+        -- Опционально: можно сохранить значение для отображения
     end,
     Callback = function()
-        infiniteSlideEnabled = not infiniteSlideEnabled
-        SprintSlide:SetEnabled(infiniteSlideEnabled)
-        
-        if slideButtonScreenGui and slideButtonScreenGui:FindFirstChild("GradientBtn") then
-            local button = slideButtonScreenGui:FindFirstChild("GradientBtn")
-            if button and button:FindFirstChild("TextLabel") then
-                button.TextLabel.Text = infiniteSlideEnabled and "Sprint Slide: On" or "Sprint Slide: Off"
-            end
-        end
+        local newState = SprintSlideModule.toggle()
         
         if Options.InfiniteSlideToggle then
-            Options.InfiniteSlideToggle:SetValue(infiniteSlideEnabled)
+            Options.InfiniteSlideToggle:SetValue(newState)
         end
+        
+        updateSlideButtonText()
     end
 })
-
--- Обновляем текст кнопки при изменении состояния
-InfiniteSlideToggle:OnChanged(function(Value)
-    infiniteSlideEnabled = Value
-    updateSlideButtonText()
-end)
 
 MiscTab:AddParagraph({
     Title = "",
