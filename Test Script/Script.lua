@@ -1236,8 +1236,8 @@ end
             screenGui.Name = "DraconicRespawnButtonGUI"
             screenGui.ResetOnSpawn = false
             screenGui.Parent = CoreGui
-            
-            local function createGradientButton(parent, position, size, text)
+
+local function createGradientButton(parent, position, size, text)
     local button = Instance.new("Frame")
     button.Name = "GradientBtn"
     button.BackgroundTransparency = 0.7
@@ -1252,36 +1252,20 @@ end
     corner.CornerRadius = UDim.new(1, 0)
     corner.Parent = button
 
+    -- АНИМИРОВАННЫЙ ГРАДИЕНТ
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),   -- Голубой
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 0, 255)), -- Пурпурный
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 255))    -- Голубой
     }
     gradient.Rotation = 0
     gradient.Parent = button
 
-    -- БЕСКОНЕЧНОЕ ВРАЩЕНИЕ ГРАДИЕНТА
-    local RunService = game:GetService("RunService")
-    local connection
-    connection = RunService.RenderStepped:Connect(function(delta)
-        -- Плавное бесконечное вращение (60 градусов в секунду)
-        gradient.Rotation = gradient.Rotation + (60 * delta)
-        
-        -- Обеспечиваем цикличность вращения
-        if gradient.Rotation >= 360 then
-            gradient.Rotation = gradient.Rotation - 360
-        end
-    end)
-
-    -- Сохраняем connection для очистки при уничтожении
-    button:SetAttribute("RotationConnection", connection)
-
-    -- Автоматическая очистка при уничтожении кнопки
-    button.Destroying:Connect(function()
-        if connection then
-            connection:Disconnect()
-            connection = nil
-        end
+    -- Анимация вращения градиента (постоянно крутится)
+    local gradientAnimation
+    gradientAnimation = game:GetService("RunService").RenderStepped:Connect(function(delta)
+        gradient.Rotation = (gradient.Rotation + 90 * delta) % 360
     end)
 
     local stroke = Instance.new("UIStroke")
@@ -1307,11 +1291,14 @@ end
     clicker.Selectable = false
     clicker.Parent = button
 
-    -- УДАЛИЛ: Клик хендлер (он должен быть у каждой кнопки свой)
-    -- clicker.MouseButton1Click:Connect(function()
-    --     manualRevive()
-    -- end)
+    -- Очистка анимации при уничтожении кнопки
+    button.Destroying:Connect(function()
+        if gradientAnimation then
+            gradientAnimation:Disconnect()
+        end
+    end)
 
+    -- Эффекты при наведении (только цвет обводки)
     clicker.MouseEnter:Connect(function()
         stroke.Color = Color3.fromRGB(0, 170, 255)
     end)
@@ -2597,16 +2584,24 @@ local function createGradientButton(parent, position, size, text)
     corner.CornerRadius = UDim.new(1, 0)
     corner.Parent = button
 
+    -- АНИМИРОВАННЫЙ ГРАДИЕНТ
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),   -- Голубой
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 0, 255)), -- Пурпурный
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 255))    -- Голубой
     }
-    gradient.Rotation = 45
+    gradient.Rotation = 0
     gradient.Parent = button
 
+    -- Анимация вращения градиента (постоянно крутится)
+    local gradientAnimation
+    gradientAnimation = game:GetService("RunService").RenderStepped:Connect(function(delta)
+        gradient.Rotation = (gradient.Rotation + 90 * delta) % 360
+    end)
+
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(0, 85, 220)
+    stroke.Color = Color3.fromRGB(0, 85, 255)
     stroke.Thickness = 2
     stroke.Parent = button
 
@@ -2627,6 +2622,22 @@ local function createGradientButton(parent, position, size, text)
     clicker.Active = false
     clicker.Selectable = false
     clicker.Parent = button
+
+    -- Очистка анимации при уничтожении кнопки
+    button.Destroying:Connect(function()
+        if gradientAnimation then
+            gradientAnimation:Disconnect()
+        end
+    end)
+
+    -- Эффекты при наведении (только цвет обводки)
+    clicker.MouseEnter:Connect(function()
+        stroke.Color = Color3.fromRGB(0, 170, 255)
+    end)
+
+    clicker.MouseLeave:Connect(function()
+        stroke.Color = Color3.fromRGB(0, 85, 255)
+    end)
 
     return button, clicker, stroke
 end
@@ -2940,13 +2951,21 @@ local function createGradientButton(parent, position, size, text)
     corner.CornerRadius = UDim.new(1, 0)
     corner.Parent = button
 
+    -- АНИМИРОВАННЫЙ ГРАДИЕНТ
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),   -- Голубой
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 0, 255)), -- Пурпурный
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 255))    -- Голубой
     }
-    gradient.Rotation = 45
+    gradient.Rotation = 0
     gradient.Parent = button
+
+    -- Анимация вращения градиента (постоянно крутится)
+    local gradientAnimation
+    gradientAnimation = game:GetService("RunService").RenderStepped:Connect(function(delta)
+        gradient.Rotation = (gradient.Rotation + 90 * delta) % 360
+    end)
 
     local stroke = Instance.new("UIStroke")
     stroke.Color = Color3.fromRGB(0, 85, 255)
@@ -2960,7 +2979,6 @@ local function createGradientButton(parent, position, size, text)
     label.TextColor3 = Color3.fromRGB(255, 255, 255)
     label.TextSize = 16
     label.Font = Enum.Font.GothamBold
-    label.TextWrapped = true
     label.Parent = button
 
     local clicker = Instance.new("TextButton")
@@ -2972,6 +2990,14 @@ local function createGradientButton(parent, position, size, text)
     clicker.Selectable = false
     clicker.Parent = button
 
+    -- Очистка анимации при уничтожении кнопки
+    button.Destroying:Connect(function()
+        if gradientAnimation then
+            gradientAnimation:Disconnect()
+        end
+    end)
+
+    -- Эффекты при наведении (только цвет обводки)
     clicker.MouseEnter:Connect(function()
         stroke.Color = Color3.fromRGB(0, 170, 255)
     end)
