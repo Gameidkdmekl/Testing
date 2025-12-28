@@ -103,7 +103,6 @@ function CreateBillboardESP(Name, Part, Color, TextSize)
 
     local BillboardGui = Instance.new("BillboardGui")
     local TextLabel = Instance.new("TextLabel")
-    local TextStroke = Instance.new("UIStroke")
 
     BillboardGui.Parent = Part
     BillboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -118,13 +117,9 @@ function CreateBillboardESP(Name, Part, Color, TextSize)
     TextLabel.BackgroundTransparency = 1
     TextLabel.Size = UDim2.new(1, 0, 1, 0)
     TextLabel.TextScaled = false
-    TextLabel.Font = Enum.Font.GothamBold
+    TextLabel.Font = Enum.Font.Gotham
     TextLabel.TextSize = TextSize or 14
     TextLabel.TextColor3 = Color or Color3.fromRGB(255, 255, 255)
-
-    TextStroke.Parent = TextLabel
-    TextStroke.Thickness = 2
-    TextStroke.Color = Color3.new(0, 0, 0)
 
     return BillboardGui
 end
