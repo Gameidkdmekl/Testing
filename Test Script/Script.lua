@@ -1270,7 +1270,7 @@ Tabs.Main:AddParagraph({
     Content = ""
 })
 
- function manualRevive()
+function manualRevive()
     local player = game:GetService("Players").LocalPlayer
     local character = player.Character
     if not character then 
@@ -1294,11 +1294,19 @@ Tabs.Main:AddParagraph({
         return 
     end
     
-    local SelfReviveMethod = Options.AutoRespawnTypeDropdown and Options.AutoRespawnTypeDropdown.Value or "Spawnpoint"
+    -- ВАЖНО: Получаем текущее значение из дропдауна
+    local SelfReviveMethod = Options.AutoRespawnTypeDropdown and Options.AutoRespawnTypeDropdown.Value
+    
+    -- Если дропдаун не найден, используем "Spawnpoint" по умолчанию
+    if not SelfReviveMethod then
+        SelfReviveMethod = "Spawnpoint"
+    end
+    
+    print("[Manual Revive] Selected method:", SelfReviveMethod)
     
     Fluent:Notify({
         Title = "Respawn",
-        Content = "Attempting to revive... (" .. SelfReviveMethod .. ")",
+        Content = "Attempting " .. SelfReviveMethod .. " revive...",
         Duration = 3
     })
     
@@ -1357,24 +1365,59 @@ Tabs.Main:AddParagraph({
         
         if newCharacter and newCharacter:FindFirstChild("HumanoidRootPart") then
             -- Даем время на загрузку
-            task.wait(0.5)
+            task.wait(1.5) -- Увеличил время ожидания
             
-            -- Телепортируем
-            local teleportSuccess = safeTeleport(newCharacter, savePosition)
+            -- Используем улучшенную телепортацию
+            local newHRP = newCharacter:FindFirstChild("HumanoidRootPart")
+            local humanoid = newCharacter:FindFirstChild("Humanoid")
             
-            if teleportSuccess then
-                Fluent:Notify({
-                    Title = "Respawn",
-                    Content = "Successfully revived at your location!",
-                    Duration = 3
-                })
-            else
-                Fluent:Notify({
-                    Title = "Respawn",
-                    Content = "Revived but teleport failed. Try again.",
-                    Duration = 3
-                })
+            if humanoid then
+                humanoid:ChangeState(Enum.HumanoidStateType.Physics)
             end
+            
+            -- Плавная телепортация с проверкой
+            local raycastParams = RaycastParams.new()
+            raycastParams.FilterDescendantsInstances = {newCharacter}
+            raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+            
+            local ray = workspace:Raycast(
+                savePosition + Vector3.new(0, 50, 0),
+                Vector3.new(0, -100, 0),
+                raycastParams
+            )
+            
+            local targetPos
+            if ray then
+                targetPos = ray.Position + Vector3.new(0, 5, 0)
+            else
+                targetPos = savePosition + Vector3.new(0, 5, 0)
+            end
+            
+            -- Мгновенная телепортация (лучший метод для Evade)
+            newHRP.CFrame = CFrame.new(targetPos)
+            
+            -- Ждем и проверяем
+            task.wait(0.1)
+            
+            local distance = (newHRP.Position - targetPos).Magnitude
+            if distance > 10 then
+                -- Если не телепортировались, пробуем еще раз
+                newHRP.CFrame = CFrame.new(targetPos)
+                task.wait(0.1)
+            end
+            
+            if humanoid then
+                humanoid:ChangeState(Enum.HumanoidStateType.Running)
+            end
+            
+            Fluent:Notify({
+                Title = "Respawn",
+                Content = "Successfully revived at your location! Distance: " .. math.floor(distance) .. " studs",
+                Duration = 3
+            })
+            
+            print("[Manual Fake Revive] Teleported to:", targetPos, "Distance from original:", (targetPos - savePosition).Magnitude)
+            
         else
             Fluent:Notify({
                 Title = "Respawn",
@@ -1384,7 +1427,7 @@ Tabs.Main:AddParagraph({
         end
     end
 end
- 
+
 -- ЗАМЕНИТЬ ЭТУ ЧАСТЬ КОДА (в функции RespawnButton):
 RespawnButton = Tabs.Main:AddButton({
     Title = "Respawn Button",
