@@ -1252,20 +1252,36 @@ local function createGradientButton(parent, position, size, text)
     corner.CornerRadius = UDim.new(1, 0)
     corner.Parent = button
 
-    -- АНИМИРОВАННЫЙ ГРАДИЕНТ
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),   -- Голубой
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 0, 255)), -- Пурпурный
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 255))    -- Голубой
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
     }
     gradient.Rotation = 0
     gradient.Parent = button
 
-    -- Анимация вращения градиента (постоянно крутится)
-    local gradientAnimation
-    gradientAnimation = game:GetService("RunService").RenderStepped:Connect(function(delta)
-        gradient.Rotation = (gradient.Rotation + 90 * delta) % 360
+    -- БЕСКОНЕЧНОЕ ВРАЩЕНИЕ ГРАДИЕНТА
+    local RunService = game:GetService("RunService")
+    local connection
+    connection = RunService.RenderStepped:Connect(function(delta)
+        -- Плавное бесконечное вращение (60 градусов в секунду)
+        gradient.Rotation = gradient.Rotation + (60 * delta)
+        
+        -- Обеспечиваем цикличность вращения
+        if gradient.Rotation >= 360 then
+            gradient.Rotation = gradient.Rotation - 360
+        end
+    end)
+
+    -- Сохраняем connection для очистки при уничтожении
+    button:SetAttribute("RotationConnection", connection)
+
+    -- Автоматическая очистка при уничтожении кнопки
+    button.Destroying:Connect(function()
+        if connection then
+            connection:Disconnect()
+            connection = nil
+        end
     end)
 
     local stroke = Instance.new("UIStroke")
@@ -1291,14 +1307,11 @@ local function createGradientButton(parent, position, size, text)
     clicker.Selectable = false
     clicker.Parent = button
 
-    -- Очистка анимации при уничтожении кнопки
-    button.Destroying:Connect(function()
-        if gradientAnimation then
-            gradientAnimation:Disconnect()
-        end
-    end)
+    -- УДАЛИЛ: Клик хендлер (он должен быть у каждой кнопки свой)
+    -- clicker.MouseButton1Click:Connect(function()
+    --     manualRevive()
+    -- end)
 
-    -- Эффекты при наведении (только цвет обводки)
     clicker.MouseEnter:Connect(function()
         stroke.Color = Color3.fromRGB(0, 170, 255)
     end)
