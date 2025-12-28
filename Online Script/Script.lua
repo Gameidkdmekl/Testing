@@ -3433,33 +3433,8 @@ MiscTab:AddParagraph({
 local gravityEnabled = false
 local originalGravity = workspace.Gravity
 local gravityValue = 10
-
-local function toggleGravity()
-    gravityEnabled = not gravityEnabled
-    
-    if gravityEnabled then
-        workspace.Gravity = gravityValue
-    else
-        workspace.Gravity = originalGravity
-    end
-    
-    -- Обновляем текст кнопки если она существует
-    if Options.GravityButtonToggle and Options.GravityButtonToggle.Value then
-        local CoreGui = game:GetService("CoreGui")
-        local screenGui = CoreGui:FindFirstChild("GravityButtonGUI")
-        if screenGui then
-            local button = screenGui:FindFirstChild("GradientBtn")
-            if button and button:FindFirstChild("TextLabel") then
-                button.TextLabel.Text = gravityEnabled and "Gravity:On" or "Gravity:Off"
-            end
-        end
-    end
-    
-    -- Синхронизируем с тумблером
-    if Options.GravityToggle then
-        Options.GravityToggle:SetValue(gravityEnabled)
-    end
-end
+local gravityHeartbeat = nil
+local gravityKeybindValue = "G"
 
 local function createGravityButton()
     local CoreGui = game:GetService("CoreGui")
@@ -3477,105 +3452,25 @@ local function createGravityButton()
         local btnWidth = math.max(150, math.min(buttonSize, 400))
         local btnHeight = math.max(60, math.min(buttonSize * 0.4, 160))
         
-        -- Создаем основную рамку кнопки
-        local button = Instance.new("Frame")
-        button.Name = "GradientBtn"
-        button.BackgroundTransparency = 0.7
-        button.Size = UDim2.new(0, btnWidth, 0, btnHeight)
-        button.Position = UDim2.new(0.5, -btnWidth/2, 0.5, 240) -- Позиция (можно настроить)
-        button.Draggable = true
-        button.Active = true
-        button.Selectable = true
-        button.Parent = screenGui
-
-        -- Скругленные углы
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(1, 0)
-        corner.Parent = button
-
-        -- АНИМИРОВАННЫЙ ГРАДИЕНТ (как у других кнопок)
-        local gradient = Instance.new("UIGradient")
-        gradient.Color = ColorSequence.new{
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),   -- Голубой
-            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 100, 255)), -- Пурпурный
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 255))    -- Голубой
-        }
-        gradient.Rotation = 0
-        gradient.Parent = button
-
-        -- Анимация вращения градиента (постоянно крутится)
-        local gradientAnimation
-        gradientAnimation = game:GetService("RunService").RenderStepped:Connect(function(delta)
-            gradient.Rotation = (gradient.Rotation + 90 * delta) % 360
-        end)
-
-        -- Обводка
-        local stroke = Instance.new("UIStroke")
-        stroke.Color = Color3.fromRGB(0, 85, 255)
-        stroke.Thickness = 2
-        stroke.Parent = button
-
-        -- Текст кнопки
-        local label = Instance.new("TextLabel")
-        label.Text = gravityEnabled and "Gravity:On" or "Gravity:Off"
-        label.Size = UDim2.new(1, 0, 1, 0)
-        label.BackgroundTransparency = 1
-        label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        label.TextSize = 16
-        label.Font = Enum.Font.GothamBold
-        label.Parent = button
-
-        -- Кнопка для клика (прозрачная поверх всего)
-        local clicker = Instance.new("TextButton")
-        clicker.Size = UDim2.new(1, 0, 1, 0)
-        clicker.BackgroundTransparency = 1
-        clicker.Text = ""
-        clicker.ZIndex = 5
-        clicker.Active = false
-        clicker.Selectable = false
-        clicker.Parent = button
-
-        -- Очистка анимации при уничтожении кнопки
-        button.Destroying:Connect(function()
-            if gradientAnimation then
-                gradientAnimation:Disconnect()
-            end
-        end)
-
-        -- Эффекты при наведении (только цвет обводки)
-        clicker.MouseEnter:Connect(function()
-            stroke.Color = Color3.fromRGB(0, 170, 255)
-        end)
-
-        clicker.MouseLeave:Connect(function()
-            stroke.Color = Color3.fromRGB(0, 85, 255)
-        end)
+        local btn, clicker, stroke = createGradientButton(
+            screenGui,
+            UDim2.new(0.5, -btnWidth/2, 0.5, 60),
+            UDim2.new(0, btnWidth, 0, btnHeight),
+            gravityEnabled and "Gravity:On" or "Gravity:Off"
+        )
         
-        -- Обработчик клика по кнопке
         clicker.MouseButton1Click:Connect(function()
-            toggleGravity()
+            gravityEnabled = not gravityEnabled
+            if btn:FindFirstChild("TextLabel") then
+                btn.TextLabel.Text = gravityEnabled and "Gravity:On" or "Gravity:Off"
+            end
             
-            -- Обновляем текст кнопки
-            label.Text = gravityEnabled and "Gravity:On" or "Gravity:Off"
-            
-            -- Синхронизируем с тумблером
-            if Options.GravityToggle then
-                Options.GravityToggle:SetValue(gravityEnabled)
+            if gravityEnabled then
+                workspace.Gravity = gravityValue
+            else
+                workspace.Gravity = originalGravity
             end
         end)
-        
-        -- Применяем масштаб если задан
-        if Options.GravityButtonSizeInput and Options.GravityButtonSizeInput.Value then
-            local scale = tonumber(Options.GravityButtonSizeInput.Value) or 1
-            scale = math.max(0.5, math.min(scale, 3.0))
-            
-            local uiScale = button:FindFirstChild("UIScale") or Instance.new("UIScale")
-            uiScale.Scale = scale
-            uiScale.Parent = button
-        end
-        
-        -- Возвращаем созданные элементы
-        return button, clicker, stroke
     end
 end
 
