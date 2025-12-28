@@ -3370,7 +3370,7 @@ local function createSlideGradientButton()
     -- Позиционируем кнопку ниже Auto Jump кнопки
     local btn, clicker, stroke = SprintSlideModule.createGradientButton(
         slideButtonScreenGui,
-        UDim2.new(0.5, -btnWidth/2, 0.5, 180),
+        UDim2.new(0.5, -btnWidth/2, 0.5, 0),
         UDim2.new(0, btnWidth, 0, btnHeight),
         SprintSlideModule.getState() and "Sprint Slide: On" or "Sprint Slide: Off"
     )
