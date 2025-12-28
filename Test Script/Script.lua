@@ -1192,7 +1192,7 @@ Tabs.Main:AddParagraph({
         end
         
         task.spawn(function()
-            task.wait(3)
+            task.wait(0.1)
             local startTime = tick()
             repeat
                 pcall(function()
