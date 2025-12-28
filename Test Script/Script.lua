@@ -1256,7 +1256,7 @@ local function createGradientButton(parent, position, size, text)
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
         ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),   -- Голубой
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(220, 255, 255)), -- Пурпурный
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 100, 255)), -- Пурпурный
         ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 255))    -- Голубой
     }
     gradient.Rotation = 0
@@ -2588,7 +2588,7 @@ local function createGradientButton(parent, position, size, text)
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
         ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),   -- Голубой
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 0, 255)), -- Пурпурный
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 100, 255)), -- Пурпурный
         ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 255))    -- Голубой
     }
     gradient.Rotation = 0
@@ -2955,7 +2955,7 @@ local function createGradientButton(parent, position, size, text)
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
         ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),   -- Голубой
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 0, 255)), -- Пурпурный
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 100, 255)), -- Пурпурный
         ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 255))    -- Голубой
     }
     gradient.Rotation = 0
