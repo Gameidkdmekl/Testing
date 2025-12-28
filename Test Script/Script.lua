@@ -172,7 +172,7 @@ local function scanForNextbots()
     if playersFolder then
         for _, model in ipairs(playersFolder:GetChildren()) do
             if model:IsA("Model") and isNextbotModel(model) then
-                local hrp = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Head")
+                local hrp = model:FindFirstChild("Hitbox")
                 if hrp then
                     nextbots[model] = hrp
                 end
@@ -184,7 +184,7 @@ local function scanForNextbots()
     if npcsFolder then
         for _, model in ipairs(npcsFolder:GetChildren()) do
             if model:IsA("Model") and isNextbotModel(model) then
-                local hrp = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Head")
+                local hrp = model:FindFirstChild("Hitbox")
                 if hrp then
                     nextbots[model] = hrp
                 end
@@ -1290,6 +1290,10 @@ local function createGradientButton(parent, position, size, text)
     clicker.Active = false
     clicker.Selectable = false
     clicker.Parent = button
+
+    clicker.MouseButton1Click:Connect(function()
+        manualRevive()
+    end)
 
     -- Очистка анимации при уничтожении кнопки
     button.Destroying:Connect(function()
