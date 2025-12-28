@@ -1291,6 +1291,10 @@ end
                 clicker.Selectable = false
                 clicker.Parent = button
 
+                clicker.MouseButton1Click:Connect(function()
+        manualRevive()
+    end)
+
     -- Очистка анимации при уничтожении кнопки
                 button.Destroying:Connect(function()
                         if gradientAnimation then
