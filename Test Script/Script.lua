@@ -3311,7 +3311,7 @@ ResetEmoteSpeedButton = MiscTab:AddButton({
 -- ==================== SPRINT SLIDE (Внешний файл) ====================
 
 -- Загрузка внешнего модуля Sprint Slide
-local SprintSlideModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/your-username/your-repo/main/SprintSlide.lua"))()
+local SprintSlideModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Test%20Script/SprintSlide.lua"))()
 
 -- Настройка тумблера
 InfiniteSlideToggle = MiscTab:AddToggle("InfiniteSlideToggle", {
