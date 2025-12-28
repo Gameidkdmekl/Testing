@@ -1198,23 +1198,47 @@ Tabs.Main:AddParagraph({
     Title = "Manual",
     Content = ""
 })
+
  function manualRevive()
     local player = game:GetService("Players").LocalPlayer
     local character = player.Character
-    if not character then return end
+    if not character then 
+        Fluent:Notify({
+            Title = "Respawn",
+            Content = "No character found!",
+            Duration = 3
+        })
+        return 
+    end
     
     local hrp = character:FindFirstChild("HumanoidRootPart")
     local isDowned = character:GetAttribute("Downed")
     
     if not isDowned then 
+        Fluent:Notify({
+            Title = "Respawn",
+            Content = "You are not downed!",
+            Duration = 3
+        })
         return 
     end
     
     local SelfReviveMethod = Options.AutoRespawnTypeDropdown and Options.AutoRespawnTypeDropdown.Value or "Spawnpoint"
     
+    Fluent:Notify({
+        Title = "Respawn",
+        Content = "Attempting to revive... (" .. SelfReviveMethod .. ")",
+        Duration = 3
+    })
+    
     if SelfReviveMethod == "Spawnpoint" then
         pcall(function()
             ReplicatedStorage.Events.Player.ChangePlayerMode:FireServer(true)
+            Fluent:Notify({
+                Title = "Respawn",
+                Content = "Reviving at spawnpoint...",
+                Duration = 3
+            })
         end)
         
     elseif SelfReviveMethod == "Fake Revive" then
@@ -1257,12 +1281,19 @@ Tabs.Main:AddParagraph({
                 if movedDistance > 5 then
                     lastSavedPosition = nil
                 end
+                Fluent:Notify({
+                    Title = "Respawn",
+                    Content = "Revived and teleported back!",
+                    Duration = 3
+                })
             end
         end)
     end
 end
 
- RespawnButton = Tabs.Main:AddButton({
+ 
+-- ЗАМЕНИТЬ ЭТУ ЧАСТЬ КОДА (в функции RespawnButton):
+RespawnButton = Tabs.Main:AddButton({
     Title = "Respawn Button",
     Callback = function()
         local CoreGui = game:GetService("CoreGui")
@@ -1279,78 +1310,78 @@ end
             screenGui.ResetOnSpawn = false
             screenGui.Parent = CoreGui
 
-local function createGradientButton(parent, position, size, text)
-    local button = Instance.new("Frame")
-    button.Name = "GradientBtn"
-    button.BackgroundTransparency = 0.7
-    button.Size = size
-    button.Position = position
-    button.Draggable = true
-    button.Active = true
-    button.Selectable = true
-    button.Parent = parent
+            local function createGradientButton(parent, position, size, text)
+                local button = Instance.new("Frame")
+                button.Name = "GradientBtn"
+                button.BackgroundTransparency = 0.7
+                button.Size = size
+                button.Position = position
+                button.Draggable = true
+                button.Active = true
+                button.Selectable = true
+                button.Parent = parent
 
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(1, 0)
-    corner.Parent = button
+                local corner = Instance.new("UICorner")
+                corner.CornerRadius = UDim.new(1, 0)
+                corner.Parent = button
 
-    -- АНИМИРОВАННЫЙ ГРАДИЕНТ
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),   -- Голубой
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 100, 255)), -- Пурпурный
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 255))    -- Голубой
-    }
-    gradient.Rotation = 0
-    gradient.Parent = button
+                -- АНИМИРОВАННЫЙ ГРАДИЕНТ
+                local gradient = Instance.new("UIGradient")
+                gradient.Color = ColorSequence.new{
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),   -- Голубой
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 100, 255)), -- Пурпурный
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 255))    -- Голубой
+                }
+                gradient.Rotation = 0
+                gradient.Parent = button
 
-    -- Анимация вращения градиента (постоянно крутится)
-    local gradientAnimation
-    gradientAnimation = game:GetService("RunService").RenderStepped:Connect(function(delta)
-        gradient.Rotation = (gradient.Rotation + 90 * delta) % 360
-    end)
+                -- Анимация вращения градиента (постоянно крутится)
+                local gradientAnimation
+                gradientAnimation = game:GetService("RunService").RenderStepped:Connect(function(delta)
+                    gradient.Rotation = (gradient.Rotation + 90 * delta) % 360
+                end)
 
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(0, 85, 255)
-    stroke.Thickness = 2
-    stroke.Parent = button
+                local stroke = Instance.new("UIStroke")
+                stroke.Color = Color3.fromRGB(0, 85, 255)
+                stroke.Thickness = 2
+                stroke.Parent = button
 
-    local label = Instance.new("TextLabel")
-    label.Text = text
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.TextSize = 16
-    label.Font = Enum.Font.GothamBold
-    label.Parent = button
+                local label = Instance.new("TextLabel")
+                label.Text = text
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                label.TextSize = 16
+                label.Font = Enum.Font.GothamBold
+                label.Parent = button
 
-    local clicker = Instance.new("TextButton")
-    clicker.Size = UDim2.new(1, 0, 1, 0)
-    clicker.BackgroundTransparency = 1
-    clicker.Text = ""
-    clicker.ZIndex = 5
-    clicker.Active = false
-    clicker.Selectable = false
-    clicker.Parent = button
+                local clicker = Instance.new("TextButton")
+                clicker.Size = UDim2.new(1, 0, 1, 0)
+                clicker.BackgroundTransparency = 1
+                clicker.Text = ""
+                clicker.ZIndex = 5
+                clicker.Active = false
+                clicker.Selectable = false
+                clicker.Parent = button
 
-    -- Очистка анимации при уничтожении кнопки
-    button.Destroying:Connect(function()
-        if gradientAnimation then
-            gradientAnimation:Disconnect()
-        end
-    end)
+                -- Очистка анимации при уничтожении кнопки
+                button.Destroying:Connect(function()
+                    if gradientAnimation then
+                        gradientAnimation:Disconnect()
+                    end
+                end)
 
-    -- Эффекты при наведении (только цвет обводки)
-    clicker.MouseEnter:Connect(function()
-        stroke.Color = Color3.fromRGB(0, 170, 255)
-    end)
+                -- Эффекты при наведении (только цвет обводки)
+                clicker.MouseEnter:Connect(function()
+                    stroke.Color = Color3.fromRGB(0, 170, 255)
+                end)
 
-    clicker.MouseLeave:Connect(function()
-        stroke.Color = Color3.fromRGB(0, 85, 255)
-    end)
+                clicker.MouseLeave:Connect(function()
+                    stroke.Color = Color3.fromRGB(0, 85, 255)
+                end)
 
-    return button, clicker, stroke
-                end
+                return button, clicker, stroke
+            end
             
             local buttonSize = 190
             if Options.RespawnButtonSizeInput and Options.RespawnButtonSizeInput.Value and tonumber(Options.RespawnButtonSizeInput.Value) then
@@ -1366,6 +1397,11 @@ local function createGradientButton(parent, position, size, text)
                 UDim2.new(0, btnWidth, 0, btnHeight),
                 "RESPAWN"
             )
+            
+            -- ДОБАВИТЬ ЭТУ ЧАСТЬ: Связываем клик с функцией респавна
+            clicker.MouseButton1Click:Connect(function()
+                manualRevive() -- Вызываем функцию респавна при клике
+            end)
         end
     end
 })
