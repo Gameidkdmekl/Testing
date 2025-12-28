@@ -3308,7 +3308,7 @@ ResetEmoteSpeedButton = MiscTab:AddButton({
     end
 })
 
--- ==================== INFINITE SLIDE (ОПТИМИЗИРОВАНО) ====================
+-- ==================== INFINITE SLIDE (ИСПРАВЛЕННЫЙ) ====================
 
 local infiniteSlideEnabled = false
 local slideFrictionValue = -8
@@ -3318,7 +3318,7 @@ local infiniteSlideCharacterConn = nil
 local RunService = game:GetService("RunService")
 local player = game:GetService("Players").LocalPlayer
 
--- Кэшированные проверки для оптимизации
+-- Быстрая проверка таблиц
 local function findMovementTables()
     if #movementTables > 0 then return true end
     
@@ -3327,9 +3327,9 @@ local function findMovementTables()
     
     for i = 1, #objects do
         local obj = objects[i]
-        if type(obj) == "table" then
-            -- Быстрая проверка только основных полей
-            if rawget(obj, "Friction") and rawget(obj, "Speed") and rawget(obj, "JumpCap") then
+        if type(obj) == "table" and rawget(obj, "Friction") then
+            -- Проверяем что это действительно таблица движений
+            if rawget(obj, "Speed") or rawget(obj, "JumpCap") or rawget(obj, "WalkSpeedMultiplier") then
                 table.insert(movementTables, obj)
             end
         end
@@ -3338,9 +3338,12 @@ local function findMovementTables()
     return #movementTables > 0
 end
 
--- Оптимизированная функция установки трения
+-- Функция установки трения
 local function setSlideFriction(value)
-    if #movementTables == 0 then return end
+    if #movementTables == 0 then
+        -- Если таблицы не найдены, ищем снова
+        if not findMovementTables() then return end
+    end
     
     for i = 1, #movementTables do
         local tbl = movementTables[i]
@@ -3350,61 +3353,80 @@ local function setSlideFriction(value)
     end
 end
 
--- Быстрая проверка состояния игрока
-local function getPlayerState()
+-- Получение модели игрока
+local function getPlayerModel()
     local gameFolder = workspace:FindFirstChild("Game")
     if not gameFolder then return nil end
     
     local playersFolder = gameFolder:FindFirstChild("Players")
     if not playersFolder then return nil end
     
-    local playerModel = playersFolder:FindFirstChild(player.Name)
-    if not playerModel then return nil end
-    
-    return playerModel:GetAttribute("State")
+    return playersFolder:FindFirstChild(player.Name)
 end
 
--- Оптимизированный Heartbeat
+-- Heartbeat функция
 local function infiniteSlideHeartbeatFunc()
     if not infiniteSlideEnabled then return end
     
-    local state = getPlayerState()
-    if not state then return end
+    local playerModel = getPlayerModel()
+    if not playerModel then return end
     
-    if state == "Slide" or state == "EmotingSlide" then
+    local state = playerModel:GetAttribute("State")
+    
+    -- КРИТИЧЕСКИ ВАЖНАЯ ЧАСТЬ - не удалять!
+    if state == "Slide" then
+        pcall(function()
+            playerModel:SetAttribute("State", "EmotingSlide")
+        end)
+        setSlideFriction(slideFrictionValue)
+    elseif state == "EmotingSlide" then
         setSlideFriction(slideFrictionValue)
     else
         setSlideFriction(5)
     end
 end
 
--- Упрощенная обработка добавления персонажа
+-- Обработка появления персонажа
 local function onCharacterAddedSlide()
     if not infiniteSlideEnabled then return end
     
-    task.wait(1) -- Ждем загрузки модели
+    -- Ждем загрузки модели
+    for i = 1, 10 do
+        task.wait(0.3)
+        if getPlayerModel() then
+            break
+        end
+    end
     
-    -- Однократный поиск таблиц
+    -- Обновляем таблицы движений
     findMovementTables()
 end
 
+-- Включение/выключение функции
 local function setInfiniteSlide(enabled)
     infiniteSlideEnabled = enabled
 
     if enabled then
-        -- Инициализация один раз
+        -- Ищем таблицы движений
+        findMovementTables()
+        
+        -- Подключаем обработчик смены персонажа
         if not infiniteSlideCharacterConn then
             infiniteSlideCharacterConn = player.CharacterAdded:Connect(onCharacterAddedSlide)
         end
         
-        -- Запускаем Heartbeat
-        if infiniteSlideHeartbeat then infiniteSlideHeartbeat:Disconnect() end
-        infiniteSlideHeartbeat = RunService.Heartbeat:Connect(infiniteSlideHeartbeatFunc)
-        
-        -- Применяем настройки к текущему персонажу
+        -- Применяем к текущему персонажу
         if player.Character then
-            onCharacterAddedSlide()
+            task.spawn(function()
+                onCharacterAddedSlide()
+            end)
         end
+        
+        -- Запускаем Heartbeat
+        if infiniteSlideHeartbeat then
+            infiniteSlideHeartbeat:Disconnect()
+        end
+        infiniteSlideHeartbeat = RunService.Heartbeat:Connect(infiniteSlideHeartbeatFunc)
         
     else
         -- Отключаем все соединения
@@ -3428,6 +3450,9 @@ InfiniteSlideToggle = MiscTab:AddToggle("InfiniteSlideToggle", {
     Default = false,
     Callback = function(Value)
         setInfiniteSlide(Value)
+        if Options.SlideButtonToggle and Options.SlideButtonToggle.Value then
+            updateSlideButtonText()
+        end
     end
 })
 
