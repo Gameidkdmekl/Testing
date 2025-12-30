@@ -1,6 +1,6 @@
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "🎄Draconic Hub X🎄",
-    Text = "Welcome Draconic Hub Remake",
+    Text = "Welcome Draconic Hub Remake 1.1",
     Duration = 7
 })
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
@@ -49,46 +49,6 @@ warn = function(...)
     end
 end
 -- ==================== END SAFETY WRAPPERS ====================
-
--- ==================== FIX FOR REQUIRE ERRORS ====================
--- Монки-патч для обхода ограничений require
-local originalModuleScript = getrawmetatable(game).__index
-if originalModuleScript then
-    setreadonly(getrawmetatable(game), false)
-    
-    local oldIndex = originalModuleScript
-    getrawmetatable(game).__index = function(self, key)
-        if key == "Require" then
-            return function(module)
-                local success, result = pcall(oldIndex.Require, self, module)
-                return success and result or nil
-            end
-        end
-        return oldIndex(self, key)
-    end
-    
-    setreadonly(getrawmetatable(game), true)
-end
-
--- Тихий режим для скрипта
-local function silentPcall(func, ...)
-    local success, result = pcall(func, ...)
-    return success, result
-end
-
--- Переопределяем все опасные вызовы
-local originalNamecall
-if not originalNamecall then
-    originalNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-        local method = getnamecallmethod()
-        if method == "Require" or method == "require" then
-            -- Подавляем ошибки require
-            local success, result = silentPcall(originalNamecall, self, ...)
-            return result
-        end
-        return originalNamecall(self, ...)
-    end)
-end
 
 local Window = Fluent:CreateWindow({
     Title = "🎄Draconic-X-Remake🎄",
