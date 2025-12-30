@@ -2106,40 +2106,47 @@ end
 
 local function getConfigTables()
     local tables = {}
-    for _, obj in ipairs(getgc(true)) do
+    task.wait(0.1) -- Дать время на инициализацию
+    
+    local gcObjects = getgc(true) -- Теперь безопасно
+    for _, obj in ipairs(gcObjects) do
         local success, result = pcall(function()
             if hasAllFields(obj) then return obj end
         end)
         if success and result then
             table.insert(tables, result)
         end
+        task.wait(0.001) -- Маленькая задержка
     end
     return tables
 end
 
 local function applyToTables(callback)
-    local targets = getConfigTables()
-    if #targets == 0 then return end
-    
-    if getgenv().ApplyMode == "Optimized" then
-        task.spawn(function()
+    task.spawn(function()
+        task.wait(0.2) -- Задержка перед началом
+        
+        local targets = getConfigTables()
+        if #targets == 0 then return end
+        
+        if getgenv().ApplyMode == "Optimized" then
             for i, tableObj in ipairs(targets) do
                 if tableObj and typeof(tableObj) == "table" then
                     pcall(callback, tableObj)
                 end
                 
-                if i % 3 == 0 then
-                    task.wait()
+                if i % 5 == 0 then
+                    task.wait(0.01)
                 end
             end
-        end)
-    else
-        for i, tableObj in ipairs(targets) do
-            if tableObj and typeof(tableObj) == "table" then
-                pcall(callback, tableObj)
+        else
+            for i, tableObj in ipairs(targets) do
+                if tableObj and typeof(tableObj) == "table" then
+                    pcall(callback, tableObj)
+                end
+                task.wait(0.01) -- Маленькая задержка между вызовами
             end
         end
-    end
+    end)
 end
 
 local function applyStoredSettings()
@@ -3126,33 +3133,43 @@ MiscTab:AddSection("Movement Modification")
 
 local originalEmoteSpeeds = {}
 local itemsFolder = game:GetService("ReplicatedStorage"):FindFirstChild("Items")
-if itemsFolder then
-    local emotesFolder = itemsFolder:FindFirstChild("Emotes")
-    if emotesFolder then
-        for _, emoteModule in ipairs(emotesFolder:GetChildren()) do
-            if emoteModule:IsA("ModuleScript") then
-                local success, emoteData = pcall(require, emoteModule)
-                if success and emoteData and emoteData.EmoteInfo then
-                    originalEmoteSpeeds[emoteModule.Name] = emoteData.EmoteInfo.SpeedMult
+
+-- Загружаем с задержкой
+task.spawn(function()
+    task.wait(3) -- Дать игре полностью загрузиться
+    
+    if itemsFolder then
+        local emotesFolder = itemsFolder:FindFirstChild("Emotes")
+        if emotesFolder then
+            for _, emoteModule in ipairs(emotesFolder:GetChildren()) do
+                if emoteModule:IsA("ModuleScript") then
+                    task.wait(0.05) -- Задержка между require
+                    local emoteData = require(emoteModule) -- Теперь безопасно
+                    if emoteData and emoteData.EmoteInfo then
+                        originalEmoteSpeeds[emoteModule.Name] = emoteData.EmoteInfo.SpeedMult
+                    end
                 end
             end
         end
     end
-end
+end)
 
 local function applyEmoteSpeed(speedValue)
     if not itemsFolder then return end
     local emotesFolder = itemsFolder:FindFirstChild("Emotes")
     if not emotesFolder then return end
     
-    for _, emoteModule in ipairs(emotesFolder:GetChildren()) do
-        if emoteModule:IsA("ModuleScript") then
-            local success, emoteData = pcall(require, emoteModule)
-            if success and emoteData and emoteData.EmoteInfo and emoteData.EmoteInfo.SpeedMult ~= 0 then
-                emoteData.EmoteInfo.SpeedMult = speedValue
+    task.spawn(function()
+        for _, emoteModule in ipairs(emotesFolder:GetChildren()) do
+            if emoteModule:IsA("ModuleScript") then
+                task.wait(0.05) -- Задержка
+                local emoteData = require(emoteModule) -- Безопасно
+                if emoteData and emoteData.EmoteInfo and emoteData.EmoteInfo.SpeedMult ~= 0 then
+                    emoteData.EmoteInfo.SpeedMult = speedValue
+                end
             end
         end
-    end
+    end)
 end
 
 local function restoreOriginalEmoteSpeeds()
@@ -3625,7 +3642,9 @@ local bhopButtonScreenGui = nil
 
 local function findFrictionTables()
     frictionTables = {}
-    for _, t in pairs(getgc(true)) do
+    local gcObjects = getgc(true) -- Безопасно
+    
+    for _, t in ipairs(gcObjects) do
         if type(t) == "table" and rawget(t, "Friction") then
             table.insert(frictionTables, {obj = t, original = t.Friction})
         end
