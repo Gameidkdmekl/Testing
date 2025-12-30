@@ -6,6 +6,49 @@ game:GetService("StarterGui"):SetCore("SendNotification", {
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+-- ==================== SAFETY WRAPPERS ====================
+local originalRequire = require
+local originalGetGC = getgc
+local originalPrint = print
+local originalWarn = warn
+
+-- Безопасный require
+require = function(module)
+    local success, result = pcall(originalRequire, module)
+    if not success then
+        -- Тихо возвращаем nil вместо ошибки
+        return nil
+    end
+    return result
+end
+
+-- Безопасный getgc
+getgc = function(...)
+    local success, result = pcall(originalGetGC, ...)
+    if not success then
+        -- Возвращаем пустую таблицу вместо ошибки
+        return {}
+    end
+    return result
+end
+
+-- Тихий вывод (игнорирует ошибки require)
+print = function(...)
+    local args = {...}
+    local message = table.concat(args, " ")
+    if not string.find(message, "Cannot require a RobloxScript module") then
+        originalPrint(...)
+    end
+end
+
+warn = function(...)
+    local args = {...}
+    local message = table.concat(args, " ")
+    if not string.find(message, "Cannot require a RobloxScript module") then
+        originalWarn(...)
+    end
+end
+-- ==================== END SAFETY WRAPPERS ====================
 local Window = Fluent:CreateWindow({
     Title = "🎄Draconic-X-Remake🎄",
     SubTitle = "Overhaul (1.9 TEST Version) Made by Unknownproooolucky",
