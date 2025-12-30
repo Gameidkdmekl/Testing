@@ -49,6 +49,47 @@ warn = function(...)
     end
 end
 -- ==================== END SAFETY WRAPPERS ====================
+
+-- ==================== FIX FOR REQUIRE ERRORS ====================
+-- Монки-патч для обхода ограничений require
+local originalModuleScript = getrawmetatable(game).__index
+if originalModuleScript then
+    setreadonly(getrawmetatable(game), false)
+    
+    local oldIndex = originalModuleScript
+    getrawmetatable(game).__index = function(self, key)
+        if key == "Require" then
+            return function(module)
+                local success, result = pcall(oldIndex.Require, self, module)
+                return success and result or nil
+            end
+        end
+        return oldIndex(self, key)
+    end
+    
+    setreadonly(getrawmetatable(game), true)
+end
+
+-- Тихий режим для скрипта
+local function silentPcall(func, ...)
+    local success, result = pcall(func, ...)
+    return success, result
+end
+
+-- Переопределяем все опасные вызовы
+local originalNamecall
+if not originalNamecall then
+    originalNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        if method == "Require" or method == "require" then
+            -- Подавляем ошибки require
+            local success, result = silentPcall(originalNamecall, self, ...)
+            return result
+        end
+        return originalNamecall(self, ...)
+    end)
+end
+
 local Window = Fluent:CreateWindow({
     Title = "🎄Draconic-X-Remake🎄",
     SubTitle = "Overhaul (1.9 TEST Version) Made by Unknownproooolucky",
@@ -3131,65 +3172,6 @@ player.CharacterAdded:Connect(function()
 end)
 MiscTab:AddSection("Movement Modification")
 
-local originalEmoteSpeeds = {}
-local itemsFolder = game:GetService("ReplicatedStorage"):FindFirstChild("Items")
-
--- Загружаем с задержкой
-task.spawn(function()
-    task.wait(3) -- Дать игре полностью загрузиться
-    
-    if itemsFolder then
-        local emotesFolder = itemsFolder:FindFirstChild("Emotes")
-        if emotesFolder then
-            for _, emoteModule in ipairs(emotesFolder:GetChildren()) do
-                if emoteModule:IsA("ModuleScript") then
-                    task.wait(0.05) -- Задержка между require
-                    local emoteData = require(emoteModule) -- Теперь безопасно
-                    if emoteData and emoteData.EmoteInfo then
-                        originalEmoteSpeeds[emoteModule.Name] = emoteData.EmoteInfo.SpeedMult
-                    end
-                end
-            end
-        end
-    end
-end)
-
-local function applyEmoteSpeed(speedValue)
-    if not itemsFolder then return end
-    local emotesFolder = itemsFolder:FindFirstChild("Emotes")
-    if not emotesFolder then return end
-    
-    task.spawn(function()
-        for _, emoteModule in ipairs(emotesFolder:GetChildren()) do
-            if emoteModule:IsA("ModuleScript") then
-                task.wait(0.05) -- Задержка
-                local emoteData = require(emoteModule) -- Безопасно
-                if emoteData and emoteData.EmoteInfo and emoteData.EmoteInfo.SpeedMult ~= 0 then
-                    emoteData.EmoteInfo.SpeedMult = speedValue
-                end
-            end
-        end
-    end)
-end
-
-local function restoreOriginalEmoteSpeeds()
-    if not itemsFolder then return end
-    local emotesFolder = itemsFolder:FindFirstChild("Emotes")
-    if not emotesFolder then return end
-    
-    for _, emoteModule in ipairs(emotesFolder:GetChildren()) do
-        if emoteModule:IsA("ModuleScript") then
-            local originalSpeed = originalEmoteSpeeds[emoteModule.Name]
-            if originalSpeed then
-                local success, emoteData = pcall(require, emoteModule)
-                if success and emoteData and emoteData.EmoteInfo then
-                    emoteData.EmoteInfo.SpeedMult = originalSpeed
-                end
-            end
-        end
-    end
-end
-
 local requiredFields = {
     Friction = true,
     AirStrafeAcceleration = true,
@@ -3208,16 +3190,20 @@ local requiredFields = {
 
 local function getMatchingTables()
     local matched = {}
-    for _, obj in pairs(getgc(true)) do
+    
+    -- Задержка перед началом
+    task.wait(1)
+    
+    local success, gcObjects = pcall(getgc, true)
+    if not success then
+        warn("Failed to get GC tables")
+        return matched
+    end
+    
+    for _, obj in ipairs(gcObjects) do
         if typeof(obj) == "table" then
-            local ok = true
-            for field in pairs(requiredFields) do
-                if rawget(obj, field) == nil then
-                    ok = false
-                    break
-                end
-            end
-            if ok then
+            -- Проверяем только несколько ключевых полей
+            if rawget(obj, "WalkSpeedMultiplier") and rawget(obj, "Speed") then
                 table.insert(matched, obj)
             end
         end
@@ -3273,19 +3259,17 @@ end
 
 EmoteSpeedModeDropdown = MiscTab:AddDropdown("EmoteSpeedModeDropdown", {
     Title = "Emote speed mode",
-    Values = {"Nah", "Legit", "Multiplier speed"},
+    Values = {"Nah", "Multiplier speed"},
     Multi = false,
     Default = "Nah",
     Callback = function(Value)
         if Value == "Nah" then
             resetMultiplierSpeed()
-            restoreOriginalEmoteSpeeds()
             if connection then 
                 connection:Disconnect() 
                 connection = nil
             end
         elseif Value == "Multiplier speed" then
-            restoreOriginalEmoteSpeeds()
             setupConnection(getPlayerObj())
             task.spawn(function()
                 while Options.EmoteSpeedModeDropdown and Options.EmoteSpeedModeDropdown.Value == "Multiplier speed" do
@@ -3300,14 +3284,6 @@ EmoteSpeedModeDropdown = MiscTab:AddDropdown("EmoteSpeedModeDropdown", {
                     end
                 end
             end)
-        elseif Value == "Legit" then
-            resetMultiplierSpeed()
-            if connection then 
-                connection:Disconnect() 
-                connection = nil
-            end
-            local speedValue = featureStates.EmoteSpeedValue or 2
-            applyEmoteSpeed(speedValue)
         end
     end
 })
@@ -3324,46 +3300,10 @@ EmoteSpeedInput = MiscTab:AddInput("EmoteSpeedInput", {
             featureStates.EmoteSpeedValue = num
             local appliedValue = num / 1000
             
-            if Options.EmoteSpeedModeDropdown and Options.EmoteSpeedModeDropdown.Value == "Legit" then
-                applyEmoteSpeed(appliedValue)
-            elseif Options.EmoteSpeedModeDropdown and Options.EmoteSpeedModeDropdown.Value == "Multiplier speed" then
+            if Options.EmoteSpeedModeDropdown and Options.EmoteSpeedModeDropdown.Value == "Multiplier speed" then
                 emotingSpeed = appliedValue
             end
         end
-    end
-})
-
-ApplyUnwalkableButton = MiscTab:AddButton({
-    Title = "Apply Speed to Unwalkable Emotes",
-    Callback = function()
-        if not itemsFolder then return end
-        
-        local emotesFolder = itemsFolder:FindFirstChild("Emotes")
-        if not emotesFolder then return end
-        
-        local speedValue = featureStates.EmoteSpeedValue or 2
-        
-        for _, emoteModule in ipairs(emotesFolder:GetChildren()) do
-            if emoteModule:IsA("ModuleScript") then
-                local success, emoteData = pcall(require, emoteModule)
-                if success and emoteData and emoteData.EmoteInfo and emoteData.EmoteInfo.SpeedMult == 0 then
-                    emoteData.EmoteInfo.SpeedMult = speedValue
-                end
-            end
-        end
-    end
-})
-
-ResetEmoteSpeedButton = MiscTab:AddButton({
-    Title = "Reset Emote Speed",
-    Callback = function()
-        Fluent:Notify({
-            Title = "Emote Speed",
-            Content = "Resetting emote speeds...",
-            Duration = 3
-        })
-        restoreOriginalEmoteSpeeds()
-        resetMultiplierSpeed()
     end
 })
 
