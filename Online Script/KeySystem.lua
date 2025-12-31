@@ -154,12 +154,12 @@ task.spawn(animateLogo)
 --- Platoboost Key System Configuration ---
 local service = 16094
 local secret = "9bfce86e-a6fc-4baf-93d8-4d77a2254e41"
-local useNonce = false
+local useNonce = true
 
 -- Режим тестирования (для быстрой проверки FREE ключей)
-local TEST_MODE = false
+local TEST_MODE = true
 local TEST_KEYS = {
-    ["FREE_ce9cee7b67c4b257da6907af2924dcd2"] = true,
+    ["New Year🎄"] = true,
     ["FREE_TEST"] = true,
     ["FREE_ACCESS"] = true
 }
