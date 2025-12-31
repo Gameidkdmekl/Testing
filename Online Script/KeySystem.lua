@@ -159,7 +159,7 @@ local useNonce = true
 -- Режим тестирования (для быстрой проверки FREE ключей)
 local TEST_MODE = true
 local TEST_KEYS = {
-    ["New Year🎄"] = true,
+    ["FREE_NEWYEAR"] = true,
     ["FREE_TEST"] = true,
     ["FREE_ACCESS"] = true
 }
@@ -702,7 +702,7 @@ end)
 if TEST_MODE then
     task.spawn(function()
         task.wait(1)
-        keyInput.Text = "New Year🎄"
+        keyInput.Text = "FREE_NEWYEAR"
         showMessage("Test key inserted automatically", Color3.fromRGB(0, 255, 0))
     end)
 end
