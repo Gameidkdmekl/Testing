@@ -702,7 +702,7 @@ end)
 if TEST_MODE then
     task.spawn(function()
         task.wait(1)
-        keyInput.Text = "FREE_ce9cee7b67c4b257da6907af2924dcd2"
+        keyInput.Text = "New Year🎄"
         showMessage("Test key inserted automatically", Color3.fromRGB(0, 255, 0))
     end)
 end
