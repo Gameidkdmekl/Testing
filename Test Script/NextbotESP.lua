@@ -80,6 +80,7 @@ function CreateBillboardESP(Name, Part, Color, TextSize)
     TextLabel.Size = UDim2.new(1, 0, 1, 0)
     TextLabel.TextScaled = false
     TextLabel.Font = Enum.Font.RobotoMono
+    TextLabel.TextStrokeTransparency = 0.5
     TextLabel.TextSize = TextSize or 14
     TextLabel.TextColor3 = Color or Color3.fromRGB(255, 255, 255)
     TextLabel.Text = "Loading..."
