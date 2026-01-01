@@ -593,7 +593,7 @@ NextbotToggle:OnChanged(function(value)
         if not ExternalNextbotESPLoaded then
             local success, errorMsg = pcall(function()
                 -- Загружаем внешний Nextbot ESP
-                ExternalNextbotESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/NextbotESP.lua"))()
+                ExternalNextbotESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Test%20Script/NextbotESP.lua"))()
                 ExternalNextbotESPLoaded = true
                 
                 -- Гарантируем, что ESP работает
