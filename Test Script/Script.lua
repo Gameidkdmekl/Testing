@@ -178,7 +178,7 @@ function updatePlayerTracers()
                     tracer.Visible = true
                     tracer.From = screenBottomCenter
                     tracer.To = Vector2.new(vector.X, vector.Y)
-                    tracer.Color = Color3.fromRGB(0, 255, 0)
+                    tracer.Color = Color3.fromRGB(255, 255, 255)
                 else
                     tracer.Visible = false
                 end
