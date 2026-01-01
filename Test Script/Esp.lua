@@ -94,10 +94,10 @@ local function updateAllESP()
                 
                 if character:FindFirstChild("Revives") then
                     textColor = Color3.fromRGB(255, 255, 0) -- Желтый
-                    extraText = " [Revives]"
+                    extraText = "] [Revives"
                 elseif character:GetAttribute("Downed") then
                     textColor = Color3.fromRGB(255, 0, 0) -- Красный
-                    extraText = " [Downed]"
+                    extraText = "] [Downed"
                 end
                 
                 textLabel.Text = string.format("%s [%dm%s]", player.Name, math.floor(distance), extraText)
