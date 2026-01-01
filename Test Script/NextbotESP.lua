@@ -1,104 +1,171 @@
 -- NextbotESP.lua
--- Внешний ESP для некстботов, загружаемый через Draconic Hub
+-- Внешний файл для Nextbot ESP из Draconic Hub
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
-local workspace = game:GetService("Workspace")
 
--- Функции для работы с Drawing API
-local drawings = {}
-local nextbotData = {}
-local espEnabled = false
-local loopConnection = nil
-local cleanupInterval = 30 -- Очистка старых объектов каждые 30 секунд
-local lastCleanup = tick()
+-- Billboard ESP Variables
+local NextbotBillboards = {}
+local nextbotLoop = nil
 
--- Настройки ESP
-local ESP_CONFIG = {
-    BoxColor = Color3.fromRGB(255, 0, 0),     -- Красный для некстботов
-    TextColor = Color3.fromRGB(255, 255, 255), -- Белый текст
-    TracerColor = Color3.fromRGB(255, 0, 0),   -- Красные трассеры
-    MaxDistance = 1000,                       -- Максимальная дистанция
-    BoxThickness = 1,
-    TracerThickness = 1,
-    TextSize = 14,
-    ShowDistance = true,
-    ShowHealth = true,
-    ShowName = true,
-    ShowBox = true,
-    ShowTracer = true
-}
-
--- Глобальные переменные для управления из основного скрипта
+-- Глобальные функции для управления
 _G.NextbotESPRunning = false
 _G.StopNextbotESP = function()
     _G.NextbotESPRunning = false
-    if loopConnection then
-        loopConnection:Disconnect()
-        loopConnection = nil
+    if nextbotLoop then
+        nextbotLoop:Disconnect()
+        nextbotLoop = nil
     end
-    clearAllDrawings()
+    clearAllNextbotESP()
 end
 
--- Создание Drawing объектов
-local function createDrawing(type, properties)
-    local drawing = Drawing.new(type)
-    for prop, value in pairs(properties) do
-        drawing[prop] = value
+-- Get nextbot names from ReplicatedStorage
+local nextBotNames = {}
+if ReplicatedStorage:FindFirstChild("NPCs") then
+    for _, npc in ipairs(ReplicatedStorage.NPCs:GetChildren()) do
+        table.insert(nextBotNames, npc.Name)
     end
-    return drawing
 end
 
--- Очистка всех Drawing объектов
-local function clearAllDrawings()
-    for _, drawingGroup in pairs(drawings) do
-        if drawingGroup then
-            for _, drawing in pairs(drawingGroup) do
-                if drawing and drawing.Remove then
-                    drawing:Remove()
-                end
+function isNextbotModel(model)
+    if not model or not model.Name then return false end
+    for _, name in ipairs(nextBotNames) do
+        if model.Name == name then return true end
+    end
+    return model.Name:lower():find("nextbot") or 
+           model.Name:lower():find("scp") or 
+           model.Name:lower():find("monster") or
+           model.Name:lower():find("creep") or
+           model.Name:lower():find("enemy") or
+           model.Name:lower():find("zombie") or
+           model.Name:lower():find("ghost") or
+           model.Name:lower():find("demon")
+end
+
+function getDistanceFromPlayer(targetPosition)
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then 
+        return 0 
+    end
+    local distance = (targetPosition - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+    return math.floor(distance)
+end
+
+-- ==================== BILLBOARD ESP FUNCTIONS ====================
+
+function CreateBillboardESP(Name, Part, Color, TextSize)
+    if not Part then return nil end
+    
+    -- Если уже есть ESP, возвращаем его
+    local existingESP = Part:FindFirstChild(Name)
+    if existingESP then
+        return existingESP
+    end
+
+    local BillboardGui = Instance.new("BillboardGui")
+    local TextLabel = Instance.new("TextLabel")
+
+    BillboardGui.Parent = Part
+    BillboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    BillboardGui.Name = Name
+    BillboardGui.AlwaysOnTop = true
+    BillboardGui.LightInfluence = 1
+    BillboardGui.Size = UDim2.new(0, 200, 0, 50)
+    BillboardGui.StudsOffset = Vector3.new(0, 3, 0)
+    BillboardGui.MaxDistance = 1000
+
+    TextLabel.Parent = BillboardGui
+    TextLabel.BackgroundTransparency = 1
+    TextLabel.Size = UDim2.new(1, 0, 1, 0)
+    TextLabel.TextScaled = false
+    TextLabel.Font = Enum.Font.RobotoMono
+    TextLabel.TextSize = TextSize or 14
+    TextLabel.TextColor3 = Color or Color3.fromRGB(255, 255, 255)
+    TextLabel.Text = "Loading..."
+
+    return BillboardGui
+end
+
+function UpdateBillboardESP(Name, Part, NameText, Color, TextSize, extraText)
+    if not Part then return false end
+
+    local esp = Part:FindFirstChild(Name)
+    if esp and esp:FindFirstChildOfClass("TextLabel") then
+        local label = esp:FindFirstChildOfClass("TextLabel")
+        
+        if Color then
+            label.TextColor3 = Color
+        end
+        
+        if TextSize then
+            label.TextSize = TextSize
+        end
+        
+        local distance = getDistanceFromPlayer(Part.Position)
+        local name = NameText or Part.Parent and Part.Parent.Name or Part.Name
+        label.Text = string.format("%s [%d m%s]", name, distance, extraText or "")
+        
+        return true
+    end
+    return false
+end
+
+function DestroyBillboardESP(Name, Part)
+    if not Part then return false end
+    
+    local esp = Part:FindFirstChild(Name)
+    if esp then
+        esp:Destroy()
+        return true
+    end
+    
+    return false
+end
+
+-- Функция для создания fake part для модели
+local function createFakePartForModel(model)
+    if not model or not model:IsA("Model") then return nil end
+    
+    local fakePart = Instance.new("Part")
+    fakePart.Name = "ESP_Anchor"
+    fakePart.Size = Vector3.new(0.1, 0.1, 0.1)
+    fakePart.Transparency = 1
+    fakePart.CanCollide = false
+    fakePart.Anchored = true
+    fakePart.Parent = model
+    
+    -- Пытаемся позиционировать в центре модели
+    if model.PrimaryPart then
+        fakePart.CFrame = model.PrimaryPart.CFrame
+    else
+        local success, center = pcall(function()
+            return model:GetBoundingBox()
+        end)
+        if success and center then
+            fakePart.CFrame = center
+        else
+            -- Если не получилось, используем первую найденную часть
+            local firstPart = model:FindFirstChildWhichIsA("BasePart")
+            if firstPart then
+                fakePart.CFrame = firstPart.CFrame
             end
         end
     end
-    drawings = {}
-    nextbotData = {}
+    
+    return fakePart
 end
 
--- Функция для получения некстботов из игры
-local function getNextbots()
+-- Основная функция сканирования некстботов
+local function scanForNextbots()
     local nextbots = {}
     
     -- Ищем в Game.Players
-    local gamePlayers = workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Players")
-    if gamePlayers then
-        for _, model in pairs(gamePlayers:GetChildren()) do
-            if model:IsA("Model") then
-                -- Проверяем, является ли модель некстботом
-                local isBot = false
-                local modelName = model.Name:lower()
-                
-                -- Проверка по имени
-                if modelName:find("nextbot") or 
-                   modelName:find("scp") or 
-                   modelName:find("monster") or
-                   modelName:find("creep") or
-                   modelName:find("enemy") or
-                   modelName:find("zombie") or
-                   modelName:find("ghost") or
-                   modelName:find("demon") or
-                   modelName:find("bot") then
-                    isBot = true
-                end
-                
-                -- Проверка по атрибутам
-                if not isBot and model:GetAttribute("IsBot") or model:GetAttribute("IsNPC") then
-                    isBot = true
-                end
-                
-                if isBot and model:FindFirstChild("HumanoidRootPart") then
-                    table.insert(nextbots, model)
-                end
+    local playersFolder = workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Players")
+    if playersFolder then
+        for _, model in ipairs(playersFolder:GetChildren()) do
+            if model:IsA("Model") and isNextbotModel(model) then
+                nextbots[model] = model
             end
         end
     end
@@ -106,314 +173,152 @@ local function getNextbots()
     -- Ищем в NPCs
     local npcsFolder = workspace:FindFirstChild("NPCs")
     if npcsFolder then
-        for _, model in pairs(npcsFolder:GetChildren()) do
-            if model:IsA("Model") and model:FindFirstChild("HumanoidRootPart") then
-                table.insert(nextbots, model)
+        for _, model in ipairs(npcsFolder:GetChildren()) do
+            if model:IsA("Model") and isNextbotModel(model) then
+                nextbots[model] = model
             end
         end
     end
     
-    return nextbots
-end
-
--- Получение здоровья некстбота
-local function getNextbotHealth(model)
-    local humanoid = model:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        return math.floor(humanoid.Health), math.floor(humanoid.MaxHealth)
-    end
-    return 100, 100
-end
-
--- Получение дистанции до некстбота
-local function getDistanceFromPlayer(targetPosition)
-    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        return 0
-    end
-    local distance = (targetPosition - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-    return math.floor(distance)
-end
-
--- Создание ESP для одного некстбота
-local function createNextbotESP(model)
-    local hrp = model:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    
-    local drawingGroup = {
-        Box = createDrawing("Square", {
-            Color = ESP_CONFIG.BoxColor,
-            Thickness = ESP_CONFIG.BoxThickness,
-            Filled = false,
-            Visible = false,
-            ZIndex = 2
-        }),
-        Name = createDrawing("Text", {
-            Color = ESP_CONFIG.TextColor,
-            Size = ESP_CONFIG.TextSize,
-            Center = true,
-            Outline = true,
-            Visible = false,
-            ZIndex = 3
-        }),
-        Distance = createDrawing("Text", {
-            Color = ESP_CONFIG.TextColor,
-            Size = ESP_CONFIG.TextSize - 2,
-            Center = true,
-            Outline = true,
-            Visible = false,
-            ZIndex = 3
-        }),
-        Health = createDrawing("Text", {
-            Color = ESP_CONFIG.TextColor,
-            Size = ESP_CONFIG.TextSize - 2,
-            Center = true,
-            Outline = true,
-            Visible = false,
-            ZIndex = 3
-        }),
-        Tracer = createDrawing("Line", {
-            Color = ESP_CONFIG.TracerColor,
-            Thickness = ESP_CONFIG.TracerThickness,
-            Visible = false,
-            ZIndex = 1
-        })
-    }
-    
-    drawings[model] = drawingGroup
-    nextbotData[model] = {
-        lastSeen = tick(),
-        position = hrp.Position
-    }
-    
-    return drawingGroup
-end
-
--- Обновление ESP для одного некстбота
-local function updateNextbotESP(model, drawingGroup)
-    if not model or not model.Parent then return false end
-    
-    local hrp = model:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-    
-    local camera = workspace.CurrentCamera
-    if not camera then return false end
-    
-    -- Получаем позицию на экране
-    local position, onScreen = camera:WorldToViewportPoint(hrp.Position)
-    
-    if not onScreen then
-        -- Скрываем ESP если объект не на экране
-        for _, drawing in pairs(drawingGroup) do
-            drawing.Visible = false
-        end
-        return false
-    end
-    
-    -- Получаем данные о некстботе
-    local distance = getDistanceFromPlayer(hrp.Position)
-    local currentHealth, maxHealth = getNextbotHealth(model)
-    
-    -- Обновляем данные
-    nextbotData[model] = {
-        lastSeen = tick(),
-        position = hrp.Position,
-        distance = distance,
-        health = currentHealth,
-        maxHealth = maxHealth
-    }
-    
-    -- Пропускаем если слишком далеко
-    if distance > ESP_CONFIG.MaxDistance then
-        for _, drawing in pairs(drawingGroup) do
-            drawing.Visible = false
-        end
-        return false
-    end
-    
-    -- Размеры бокса (зависит от дистанции)
-    local boxSize = Vector2.new(50, 80) * (1000 / math.max(distance, 100))
-    boxSize = Vector2.new(
-        math.clamp(boxSize.X, 20, 100),
-        math.clamp(boxSize.Y, 30, 120)
-    )
-    
-    -- Позиция для бокса
-    local boxPosition = Vector2.new(position.X, position.Y)
-    
-    -- Бокс
-    if ESP_CONFIG.ShowBox and drawingGroup.Box then
-        drawingGroup.Box.Size = boxSize
-        drawingGroup.Box.Position = boxPosition - boxSize / 2
-        drawingGroup.Box.Visible = true
-    else
-        drawingGroup.Box.Visible = false
-    end
-    
-    -- Имя
-    if ESP_CONFIG.ShowName and drawingGroup.Name then
-        drawingGroup.Name.Text = model.Name
-        drawingGroup.Name.Position = boxPosition - Vector2.new(0, boxSize.Y / 2 + 15)
-        drawingGroup.Name.Visible = true
-    else
-        drawingGroup.Name.Visible = false
-    end
-    
-    -- Дистанция
-    if ESP_CONFIG.ShowDistance and drawingGroup.Distance then
-        drawingGroup.Distance.Text = string.format("[%d m]", distance)
-        drawingGroup.Distance.Position = boxPosition + Vector2.new(0, boxSize.Y / 2 + 5)
-        drawingGroup.Distance.Visible = true
-    else
-        drawingGroup.Distance.Visible = false
-    end
-    
-    -- Здоровье
-    if ESP_CONFIG.ShowHealth and drawingGroup.Health then
-        local healthPercent = math.floor((currentHealth / maxHealth) * 100)
-        local healthColor = Color3.fromRGB(
-            255 - (healthPercent * 2.55),
-            healthPercent * 2.55,
-            0
-        )
-        drawingGroup.Health.Text = string.format("%d/%d (%d%%)", currentHealth, maxHealth, healthPercent)
-        drawingGroup.Health.Color = healthColor
-        drawingGroup.Health.Position = boxPosition + Vector2.new(0, boxSize.Y / 2 + 20)
-        drawingGroup.Health.Visible = true
-    else
-        drawingGroup.Health.Visible = false
-    end
-    
-    -- Трассер (линия от центра экрана к некстботу)
-    if ESP_CONFIG.ShowTracer and drawingGroup.Tracer then
-        local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
-        drawingGroup.Tracer.From = screenCenter
-        drawingGroup.Tracer.To = Vector2.new(position.X, position.Y)
-        drawingGroup.Tracer.Visible = true
-    else
-        drawingGroup.Tracer.Visible = false
-    end
-    
-    return true
-end
-
--- Основной цикл ESP
-local function updateNextbotESPList()
-    if not espEnabled or not _G.NextbotESPRunning then return end
-    
-    local currentTime = tick()
-    
-    -- Очистка старых объектов
-    if currentTime - lastCleanup > cleanupInterval then
-        for model, data in pairs(nextbotData) do
-            if currentTime - data.lastSeen > cleanupInterval * 2 then
-                if drawings[model] then
-                    for _, drawing in pairs(drawings[model]) do
-                        if drawing and drawing.Remove then
-                            drawing:Remove()
-                        end
-                    end
-                    drawings[model] = nil
-                end
-                nextbotData[model] = nil
-            end
-        end
-        lastCleanup = currentTime
-    end
-    
-    -- Получаем текущих некстботов
-    local currentNextbots = getNextbots()
-    local processedModels = {}
-    
-    -- Обновляем существующие ESP
-    for model, drawingGroup in pairs(drawings) do
-        if not model or not model.Parent then
-            -- Удаляем ESP для удаленных моделей
-            for _, drawing in pairs(drawingGroup) do
-                if drawing and drawing.Remove then
-                    drawing:Remove()
-                end
-            end
-            drawings[model] = nil
-            nextbotData[model] = nil
-        else
-            -- Обновляем ESP
-            local isStillNextbot = false
-            for _, nextbot in pairs(currentNextbots) do
-                if nextbot == model then
-                    isStillNextbot = true
-                    break
-                end
+    -- Обрабатываем найденных некстботов
+    for model, _ in pairs(nextbots) do
+        if not NextbotBillboards[model] then
+            -- Создаем fake part если нужно
+            local fakePart = model:FindFirstChild("ESP_Anchor")
+            if not fakePart then
+                fakePart = createFakePartForModel(model)
             end
             
-            if isStillNextbot then
-                updateNextbotESP(model, drawingGroup)
-                processedModels[model] = true
+            if fakePart then
+                -- Создаем ESP
+                local esp = CreateBillboardESP("NextbotESP", fakePart, Color3.fromRGB(255, 0, 0), 16)
+                if esp then
+                    UpdateBillboardESP("NextbotESP", fakePart, model.Name, Color3.fromRGB(255, 0, 0), 16)
+                    NextbotBillboards[model] = {
+                        esp = esp, 
+                        part = fakePart, 
+                        fakePart = true,
+                        lastUpdate = tick()
+                    }
+                end
+            end
+        else
+            -- Обновляем существующий ESP
+            local data = NextbotBillboards[model]
+            if data.part and data.part.Parent == model then
+                -- Обновляем позицию fake part
+                if model:IsA("Model") then
+                    if model.PrimaryPart then
+                        data.part.CFrame = model.PrimaryPart.CFrame
+                    else
+                        local success, center = pcall(function()
+                            return model:GetBoundingBox()
+                        end)
+                        if success and center then
+                            data.part.CFrame = center
+                        end
+                    end
+                end
+                
+                -- Обновляем текст ESP
+                UpdateBillboardESP("NextbotESP", data.part, model.Name, Color3.fromRGB(255, 0, 0), 16)
+                data.lastUpdate = tick()
             else
-                -- Скрываем ESP если объект больше не некстбот
-                for _, drawing in pairs(drawingGroup) do
-                    drawing.Visible = false
+                -- Если fake part удален, создаем новый
+                local fakePart = createFakePartForModel(model)
+                if fakePart then
+                    data.part = fakePart
+                    local esp = CreateBillboardESP("NextbotESP", fakePart, Color3.fromRGB(255, 0, 0), 16)
+                    if esp then
+                        UpdateBillboardESP("NextbotESP", fakePart, model.Name, Color3.fromRGB(255, 0, 0), 16)
+                        data.esp = esp
+                        data.lastUpdate = tick()
+                    end
                 end
             end
         end
     end
     
-    -- Создаем ESP для новых некстботов
-    for _, model in pairs(currentNextbots) do
-        if not processedModels[model] then
-            local drawingGroup = createNextbotESP(model)
-            if drawingGroup then
-                updateNextbotESP(model, drawingGroup)
+    -- Очищаем удаленных некстботов
+    for model, data in pairs(NextbotBillboards) do
+        if not nextbots[model] or not model.Parent then
+            if data.part then
+                DestroyBillboardESP("NextbotESP", data.part)
+                if data.fakePart then
+                    data.part:Destroy()
+                end
+            end
+            NextbotBillboards[model] = nil
+        elseif tick() - data.lastUpdate > 10 then
+            -- Удаляем старые ESP (на всякий случай)
+            if data.part then
+                DestroyBillboardESP("NextbotESP", data.part)
+                if data.fakePart then
+                    data.part:Destroy()
+                end
+            end
+            NextbotBillboards[model] = nil
+        end
+    end
+end
+
+-- ==================== CLEAR ESP FUNCTIONS ====================
+local function clearAllNextbotESP()
+    for model, data in pairs(NextbotBillboards) do
+        if data.part then
+            DestroyBillboardESP("NextbotESP", data.part)
+            if data.fakePart then
+                data.part:Destroy()
             end
         end
     end
+    NextbotBillboards = {}
 end
 
 -- Функция для запуска ESP
 local function startNextbotESP()
-    if espEnabled then return end
+    if nextbotLoop then return end
     
-    espEnabled = true
     _G.NextbotESPRunning = true
     
-    -- Запускаем цикл обновления
-    loopConnection = RunService.RenderStepped:Connect(updateNextbotESPList)
+    nextbotLoop = RunService.Heartbeat:Connect(function()
+        if _G.NextbotESPRunning then
+            scanForNextbots()
+        end
+    end)
     
-    print("Nextbot ESP started successfully!")
+    -- Немедленно запускаем сканирование
+    task.spawn(function()
+        for i = 1, 3 do
+            scanForNextbots()
+            task.wait(0.1)
+        end
+    end)
+    
+    return true
 end
 
 -- Функция для остановки ESP
 local function stopNextbotESP()
-    espEnabled = false
     _G.NextbotESPRunning = false
     
-    if loopConnection then
-        loopConnection:Disconnect()
-        loopConnection = nil
+    if nextbotLoop then
+        nextbotLoop:Disconnect()
+        nextbotLoop = nil
     end
     
-    clearAllDrawings()
+    -- Очищаем все ESP при отключении
+    clearAllNextbotESP()
     
-    print("Nextbot ESP stopped successfully!")
+    return true
 end
 
 -- Экспортируемые функции
 return {
     Start = startNextbotESP,
     Stop = stopNextbotESP,
-    UpdateConfig = function(newConfig)
-        if newConfig then
-            for key, value in pairs(newConfig) do
-                if ESP_CONFIG[key] ~= nil then
-                    ESP_CONFIG[key] = value
-                end
-            end
-        end
-    end,
-    GetConfig = function()
-        return ESP_CONFIG
-    end,
-    ClearAll = clearAllDrawings,
+    ClearAll = clearAllNextbotESP,
     IsRunning = function()
-        return espEnabled and _G.NextbotESPRunning
+        return _G.NextbotESPRunning == true
     end
 }
