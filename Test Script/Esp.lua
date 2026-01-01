@@ -89,18 +89,18 @@ local function updateAllESP()
                 local distance = (head.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
                 
                 -- Цвет в зависимости от состояния
-                local textColor = Color3.fromRGB(0, 255, 0) -- Зеленый по умолчанию
+                local textColor = Color3.fromRGB(255, 255, 255) -- Зеленый по умолчанию
                 local extraText = ""
                 
                 if character:FindFirstChild("Revives") then
                     textColor = Color3.fromRGB(255, 255, 0) -- Желтый
-                    extraText = " | revives"
+                    extraText = " [Revives]"
                 elseif character:GetAttribute("Downed") then
                     textColor = Color3.fromRGB(255, 0, 0) -- Красный
-                    extraText = " | downed"
+                    extraText = " [Downed]"
                 end
                 
-                textLabel.Text = string.format("%s | %dm%s", player.Name, math.floor(distance), extraText)
+                textLabel.Text = string.format("%s [%dm%s]", player.Name, math.floor(distance), extraText)
                 textLabel.TextColor3 = textColor
             end
         else
