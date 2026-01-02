@@ -80,7 +80,7 @@ _G.UpdateTicketESP = function()
             textLabel.BackgroundTransparency = 1
             textLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
             textLabel.TextSize = 12
-            textLabel.Font = Enum.Font.GothamBold
+            textLabel.Font = Enum.Font.RobotoMono
             textLabel.Parent = billboard
             
             local stroke = Instance.new("UIStroke")
