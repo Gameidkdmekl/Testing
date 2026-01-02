@@ -78,7 +78,7 @@ _G.UpdateTicketESP = function()
             local textLabel = Instance.new("TextLabel")
             textLabel.Size = UDim2.new(1, 0, 1, 0)
             textLabel.BackgroundTransparency = 1
-            textLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+            textLabel.TextColor3 = Color3.fromRGB(255, 165, 0)
             textLabel.TextSize = 12
             textLabel.Font = Enum.Font.RobotoMono
             textLabel.Parent = billboard
@@ -101,7 +101,7 @@ _G.UpdateTicketESP = function()
                 distance = (part.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
             end
             
-            textLabel.Text = string.format("Ticket | %d m", math.floor(distance))
+            textLabel.Text = string.format("Ticket [%d m]", math.floor(distance))
         end
     end
 end
