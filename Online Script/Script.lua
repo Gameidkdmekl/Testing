@@ -2562,7 +2562,7 @@ local function createInstantReviveButton()
     -- Позиционируем кнопку ниже других кнопок
     local btn, clicker, stroke = createGradientButton(
         instantReviveButtonScreenGui,
-        UDim2.new(0.5, -btnWidth/2, 0.5, 180),
+        UDim2.new(0.5, -btnWidth/2, 0.5, 0),
         UDim2.new(0, btnWidth, 0, btnHeight),
         instantReviveButtonState and "Instant Revive:On" or "Instant Revive:Off"
     )
@@ -3592,7 +3592,7 @@ local function createSlideGradientButton()
     -- Позиционируем кнопку ниже Auto Jump кнопки
     local btn, clicker, stroke = createGradientButton(
         slideButtonScreenGui,
-        UDim2.new(0.5, -btnWidth/2, 0.5, 180), -- Смещаем вниз от Auto Jump кнопки
+        UDim2.new(0.5, -btnWidth/2, 0.5, 0), -- Смещаем вниз от Auto Jump кнопки
         UDim2.new(0, btnWidth, 0, btnHeight),
         infiniteSlideEnabled and "Sprint Slide: On" or "Sprint Slide: Off"
     )
