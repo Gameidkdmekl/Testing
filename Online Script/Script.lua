@@ -1196,9 +1196,9 @@ local function createGradientButton(parent, position, size, text)
     -- АНИМИРОВАННЫЙ ГРАДИЕНТ
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),   -- Голубой
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 100, 255)), -- Пурпурный
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 255))    -- Голубой
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 180, 255)),   -- Голубой
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 100, 100)), -- Пурпурный
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 180, 255))    -- Голубой
     }
     gradient.Rotation = 0
     gradient.Parent = button
@@ -1210,7 +1210,7 @@ local function createGradientButton(parent, position, size, text)
     end)
 
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(0, 85, 255)
+    stroke.Color = Color3.fromRGB(75, 0, 130)
     stroke.Thickness = 2
     stroke.Parent = button
 
@@ -1245,11 +1245,11 @@ local function createGradientButton(parent, position, size, text)
 
     -- Эффекты при наведении (только цвет обводки)
     clicker.MouseEnter:Connect(function()
-        stroke.Color = Color3.fromRGB(0, 170, 255)
+        stroke.Color = Color3.fromRGB(186, 85, 211)
     end)
 
     clicker.MouseLeave:Connect(function()
-        stroke.Color = Color3.fromRGB(0, 85, 255)
+        stroke.Color = Color3.fromRGB(75, 0, 130)
     end)
 
     return button, clicker, stroke
@@ -2351,9 +2351,9 @@ local function createGradientButton(parent, position, size, text)
     -- АНИМИРОВАННЫЙ ГРАДИЕНТ
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),   -- Голубой
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 100, 255)), -- Пурпурный
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 255))    -- Голубой
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 180, 255)),   -- Голубой
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 100, 100)), -- Пурпурный
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 180, 255))    -- Голубой
     }
     gradient.Rotation = 0
     gradient.Parent = button
@@ -2365,7 +2365,7 @@ local function createGradientButton(parent, position, size, text)
     end)
 
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(0, 85, 255)
+    stroke.Color = Color3.fromRGB(75, 0, 130)
     stroke.Thickness = 2
     stroke.Parent = button
 
@@ -2396,11 +2396,11 @@ local function createGradientButton(parent, position, size, text)
 
     -- Эффекты при наведении (только цвет обводки)
     clicker.MouseEnter:Connect(function()
-        stroke.Color = Color3.fromRGB(0, 170, 255)
+        stroke.Color = Color3.fromRGB(186, 85, 211)
     end)
 
     clicker.MouseLeave:Connect(function()
-        stroke.Color = Color3.fromRGB(0, 85, 255)
+        stroke.Color = Color3.fromRGB(75, 0, 130)
     end)
 
     return button, clicker, stroke
@@ -3058,9 +3058,9 @@ local function createGradientButton(parent, position, size, text)
     -- АНИМИРОВАННЫЙ ГРАДИЕНТ
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),   -- Голубой
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 100, 255)), -- Пурпурный
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 255))    -- Голубой
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 180, 255)),   -- Голубой
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 100, 100)), -- Пурпурный
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 180, 255))    -- Голубой
     }
     gradient.Rotation = 0
     gradient.Parent = button
@@ -3072,7 +3072,7 @@ local function createGradientButton(parent, position, size, text)
     end)
 
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(0, 85, 255)
+    stroke.Color = Color3.fromRGB(75, 0, 130)
     stroke.Thickness = 2
     stroke.Parent = button
 
@@ -3103,11 +3103,11 @@ local function createGradientButton(parent, position, size, text)
 
     -- Эффекты при наведении (только цвет обводки)
     clicker.MouseEnter:Connect(function()
-        stroke.Color = Color3.fromRGB(0, 170, 255)
+        stroke.Color = Color3.fromRGB(186, 85, 211)
     end)
 
     clicker.MouseLeave:Connect(function()
-        stroke.Color = Color3.fromRGB(0, 85, 255)
+        stroke.Color = Color3.fromRGB(75, 0, 130)
     end)
 
     return button, clicker, stroke
