@@ -36,7 +36,7 @@ spinningBackground.Size = UDim2.new(1.5, 0, 1.5, 0)
 spinningBackground.AnchorPoint = Vector2.new(0.5, 0.5)
 spinningBackground.Position = UDim2.new(0.5, 0, 0.5, 0)
 spinningBackground.BackgroundTransparency = 1
-spinningBackground.Image = "rbxassetid://105848999222798"
+spinningBackground.Image = "rbxassetid://110114190497817"
 spinningBackground.ImageTransparency = 0.3
 spinningBackground.ZIndex = 1
 spinningBackground.Parent = logoContainer
@@ -48,7 +48,7 @@ mainLogo.Size = UDim2.new(0.8, 0, 0.8, 0)
 mainLogo.AnchorPoint = Vector2.new(0.5, 0.5)
 mainLogo.Position = UDim2.new(0.5, 0, 0.5, 0)
 mainLogo.BackgroundTransparency = 1
-mainLogo.Image = "rbxassetid://130570278955508"
+mainLogo.Image = "rbxassetid://104523983684961"
 mainLogo.ZIndex = 2
 mainLogo.Parent = logoContainer
 
@@ -62,7 +62,7 @@ local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(0, 660, 0, 50)
 titleLabel.Position = UDim2.new(0.5, -325, 0, 90)
 titleLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.Text = "🎄Draconic Hub X Key System🎄"
+titleLabel.Text = "Draconic Hub X Key System"
 titleLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
 titleLabel.Font = Enum.Font.SourceSansBold
 titleLabel.TextSize = 40
@@ -131,7 +131,7 @@ pcBtn.Name = "PCButton"
 pcBtn.Size = UDim2.new(0, 120, 0, 40)
 pcBtn.Position = UDim2.new(0, 300, 0.5, -20)
 pcBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100) -- Серый для невыбранного
-pcBtn.Text = "🖥️ PC"
+pcBtn.Text = "🖥️ PC (Xeno)"
 pcBtn.Font = Enum.Font.SourceSansBold
 pcBtn.TextSize = 24
 pcBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -599,9 +599,9 @@ local function executeScript()
     local success, errorMsg = pcall(function()
         -- Загружаем скрипт хаба в зависимости от выбранной платформы
         if selectedPlatform == "Mobile" then
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Test%20Script/ScriptMobile.lua"))()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/ScriptMobile.lua"))()
         else -- PC
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Test%20Script/ScriptPC.lua"))()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/Gameidkdmekl/Testing/refs/heads/main/Online%20Script/ScriptPC.lua"))()
         end
     end)
     
