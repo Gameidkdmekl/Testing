@@ -5465,110 +5465,303 @@ task.spawn(function()
     end
 end)
 
-VisualsTab:AddSection("Simple Emote Changer")
+VisualsTab:AddSection("Evade Emote Changer (Working)")
 
-local SimpleEmoteChanger = {
+local EvadeEmoteChanger = {
     enabled = false,
     mappings = {},
-    originalFire = nil
+    eventsHooked = false
 }
 
--- Создаем простые поля ввода
-local currentInputs = {}
-local replaceInputs = {}
+-- Функция для получения эмодзи по имени
+local function findEmojiByName(name)
+    local Items = game:GetService("ReplicatedStorage"):FindFirstChild("Items")
+    if not Items then return nil end
+    
+    local Emotes = Items:FindFirstChild("Emotes")
+    if not Emotes then return nil end
+    
+    -- Ищем точное совпадение
+    local exactMatch = Emotes:FindFirstChild(name)
+    if exactMatch then return exactMatch end
+    
+    -- Ищем по нижнему регистру
+    local lowerName = name:lower()
+    for _, emote in pairs(Emotes:GetChildren()) do
+        if emote.Name:lower() == lowerName then
+            return emote
+        end
+    end
+    
+    return nil
+end
 
-for i = 1, 12 do
-    currentInputs[i] = VisualsTab:AddInput("EmoteCur" .. i, {
-        Title = "Slot " .. i .. " Current",
-        Default = "",
-        Placeholder = "Current emote name",
-        Finished = false
+-- Основной хук для замены эмоций
+local function setupEmoteHooks()
+    if EvadeEmoteChanger.eventsHooked then return end
+    
+    -- Хук на UseKeybind
+    local playerScripts = game:GetService("Players").LocalPlayer:WaitForChild("PlayerScripts")
+    local useKeybindEvent = playerScripts:WaitForChild("Events"):WaitForChild("temporary_events"):WaitForChild("UseKeybind")
+    
+    local originalUseKeybind = useKeybindEvent.Fire
+    
+    useKeybindEvent.Fire = function(self, keybindData)
+        -- Проверяем, это ли эмодзи
+        if keybindData and type(keybindData) == "table" and keybindData.Key then
+            local keyName = keybindData.Key
+            
+            -- Проверяем все слоты
+            for slot, mapping in pairs(EvadeEmoteChanger.mappings) do
+                if mapping and mapping.currentEmoji and mapping.replaceEmoji then
+                    -- Сравниваем по имени эмодзи
+                    if mapping.currentEmoji.Name == keyName then
+                        print(string.format("Emote Changer: Intercepted %s -> %s", 
+                                           mapping.currentEmoji.Name, mapping.replaceEmoji.Name))
+                        
+                        -- Создаем копию данных с замененным именем
+                        local newKeybindData = {
+                            Key = mapping.replaceEmoji.Name,
+                            Down = keybindData.Down,
+                            Forced = keybindData.Forced or false
+                        }
+                        
+                        -- Вызываем оригинал с новыми данными
+                        return originalUseKeybind(self, newKeybindData)
+                    end
+                end
+            end
+        end
+        
+        return originalUseKeybind(self, keybindData)
+    end
+    
+    -- Также хук на Emote remote для надежности
+    local emoteRemote = game:GetService("ReplicatedStorage")
+        :WaitForChild("Events")
+        :WaitForChild("Character")
+        :WaitForChild("Emote")
+    
+    if emoteRemote then
+        local originalEmoteFire = emoteRemote.FireServer
+        
+        emoteRemote.FireServer = function(self, emoteName, ...)
+            if type(emoteName) == "string" then
+                -- Проверяем маппинги
+                for slot, mapping in pairs(EvadeEmoteChanger.mappings) do
+                    if mapping and mapping.currentEmoji and mapping.replaceEmoji then
+                        if mapping.currentEmoji.Name:lower() == emoteName:lower() then
+                            print(string.format("Emote Remote: %s -> %s", emoteName, mapping.replaceEmoji.Name))
+                            emoteName = mapping.replaceEmoji.Name
+                            break
+                        end
+                    end
+                end
+            end
+            
+            return originalEmoteFire(self, emoteName, ...)
+        end
+    end
+    
+    EvadeEmoteChanger.eventsHooked = true
+    print("Emote Changer hooks установлены")
+end
+
+-- Создаем UI для Emote Changer
+VisualsTab:AddParagraph({
+    Title = "Instructions",
+    Content = "Enter EXACT emote names (case-sensitive)"
+})
+
+local emoteSlots = {}
+for slot = 1, 12 do
+    emoteSlots[slot] = {
+        current = "",
+        replace = ""
+    }
+end
+
+-- Создаем поля ввода для каждого слота
+for slot = 1, 12 do
+    VisualsTab:AddParagraph({
+        Title = string.format("Slot %d", slot),
+        Content = ""
     })
     
-    replaceInputs[i] = VisualsTab:AddInput("EmoteRep" .. i, {
-        Title = "Slot " .. i .. " Replace With",
+    emoteSlots[slot].currentInput = VisualsTab:AddInput(string.format("EvadeEmoteCurrent%d", slot), {
+        Title = "Current Emote",
         Default = "",
-        Placeholder = "New emote name",
-        Finished = false
+        Placeholder = "e.g., FlossDance",
+        Finished = false,
+        Callback = function(Value)
+            emoteSlots[slot].current = Value
+        end
+    })
+    
+    emoteSlots[slot].replaceInput = VisualsTab:AddInput(string.format("EvadeEmoteReplace%d", slot), {
+        Title = "Replace With",
+        Default = "",
+        Placeholder = "e.g., OrangeJustice",
+        Finished = false,
+        Callback = function(Value)
+            emoteSlots[slot].replace = Value
+        end
     })
 end
 
--- Кнопка включения
+-- Кнопка активации
 VisualsTab:AddButton({
-    Title = "✅ Enable Emote Changer",
+    Title = "🎭 Activate Emote Changer",
     Callback = function()
-        -- Получаем Emote Remote
-        local EmoteRemote = game:GetService("ReplicatedStorage")
-            :WaitForChild("Events")
-            :WaitForChild("Character")
-            :WaitForChild("Emote")
+        -- Очищаем старые маппинги
+        EvadeEmoteChanger.mappings = {}
         
-        if not EmoteRemote then
+        local validMappings = 0
+        local invalidMappings = {}
+        
+        -- Собираем маппинги
+        for slot = 1, 12 do
+            local currentName = emoteSlots[slot].current
+            local replaceName = emoteSlots[slot].replace
+            
+            if currentName ~= "" and replaceName ~= "" then
+                local currentEmoji = findEmojiByName(currentName)
+                local replaceEmoji = findEmojiByName(replaceName)
+                
+                if currentEmoji and replaceEmoji then
+                    if currentEmoji.Name ~= replaceEmoji.Name then
+                        EvadeEmoteChanger.mappings[slot] = {
+                            currentEmoji = currentEmoji,
+                            replaceEmoji = replaceEmoji,
+                            slot = slot
+                        }
+                        validMappings = validMappings + 1
+                        print(string.format("Slot %d: %s -> %s", 
+                                           slot, currentEmoji.Name, replaceEmoji.Name))
+                    else
+                        table.insert(invalidMappings, string.format("Slot %d: Same emote", slot))
+                    end
+                else
+                    if not currentEmoji then
+                        table.insert(invalidMappings, string.format("Slot %d: Current emote '%s' not found", 
+                                                                   slot, currentName))
+                    end
+                    if not replaceEmoji then
+                        table.insert(invalidMappings, string.format("Slot %d: Replace emote '%s' not found", 
+                                                                   slot, replaceName))
+                    end
+                end
+            end
+        end
+        
+        if validMappings > 0 then
+            -- Устанавливаем хуки
+            setupEmoteHooks()
+            EvadeEmoteChanger.enabled = true
+            
+            -- Показываем результат
+            local message = string.format("✅ Emote Changer Activated!\n\n%d mapping(s) configured:\n", validMappings)
+            
+            for slot, mapping in pairs(EvadeEmoteChanger.mappings) do
+                message = message .. string.format("• Slot %d: %s → %s\n", 
+                                                  slot, mapping.currentEmoji.Name, mapping.replaceEmoji.Name)
+            end
+            
+            if #invalidMappings > 0 then
+                message = message .. "\n⚠️ Skipped slots:\n"
+                for _, err in ipairs(invalidMappings) do
+                    message = message .. "• " .. err .. "\n"
+                end
+            end
+            
             Fluent:Notify({
-                Title = "Error",
-                Content = "Emote remote not found!",
+                Title = "Emote Changer",
+                Content = message,
+                Duration = 8
+            })
+            
+            print(string.format("Emote Changer: %d valid mappings activated", validMappings))
+        else
+            Fluent:Notify({
+                Title = "Emote Changer",
+                Content = "❌ No valid emote mappings found!\nPlease enter existing emote names.",
+                Duration = 5
+            })
+        end
+    end
+})
+
+-- Кнопка деактивации
+VisualsTab:AddButton({
+    Title = "🛑 Deactivate Emote Changer",
+    Callback = function()
+        EvadeEmoteChanger.enabled = false
+        EvadeEmoteChanger.mappings = {}
+        
+        Fluent:Notify({
+            Title = "Emote Changer",
+            Content = "Emote Changer deactivated!",
+            Duration = 3
+        })
+        
+        print("Emote Changer deactivated")
+    end
+})
+
+-- Кнопка для поиска эмоций
+VisualsTab:AddButton({
+    Title = "🔍 List Available Emotes",
+    Callback = function()
+        local Items = game:GetService("ReplicatedStorage"):FindFirstChild("Items")
+        if not Items then
+            Fluent:Notify({
+                Title = "Emote List",
+                Content = "Items folder not found!",
                 Duration = 3
             })
             return
         end
         
-        -- Сохраняем оригинальный метод
-        SimpleEmoteChanger.originalFire = EmoteRemote.FireServer
+        local Emotes = Items:FindFirstChild("Emotes")
+        if not Emotes then
+            Fluent:Notify({
+                Title = "Emote List",
+                Content = "Emotes folder not found!",
+                Duration = 3
+            })
+            return
+        end
         
-        -- Собираем маппинги
-        SimpleEmoteChanger.mappings = {}
-        for i = 1, 12 do
-            local current = currentInputs[i].Value
-            local replace = replaceInputs[i].Value
-            
-            if current ~= "" and replace ~= "" then
-                SimpleEmoteChanger.mappings[current:lower()] = replace
-                print("Map: " .. current .. " -> " .. replace)
+        local emoteNames = {}
+        for _, emote in pairs(Emotes:GetChildren()) do
+            table.insert(emoteNames, emote.Name)
+        end
+        
+        table.sort(emoteNames)
+        
+        local message = "Available Emotes:\n\n"
+        for i, name in ipairs(emoteNames) do
+            message = message .. name .. "\n"
+            if i % 10 == 0 then
+                message = message .. "\n"
             end
         end
         
-        -- Создаем новый метод
-        EmoteRemote.FireServer = function(self, emoteName, ...)
-            if type(emoteName) == "string" then
-                local lowerName = emoteName:lower()
-                if SimpleEmoteChanger.mappings[lowerName] then
-                    emoteName = SimpleEmoteChanger.mappings[lowerName]
-                end
-            end
-            return SimpleEmoteChanger.originalFire(self, emoteName, ...)
-        end
+        -- Сохраняем в буфер обмена
+        setclipboard(table.concat(emoteNames, "\n"))
         
-        SimpleEmoteChanger.enabled = true
         Fluent:Notify({
-            Title = "Emote Changer",
-            Content = "Enabled successfully!",
-            Duration = 3
+            Title = "Emote List",
+            Content = string.format("📋 %d emotes found!\nCopied to clipboard.", #emoteNames),
+            Duration = 5
         })
-    end
-})
-
--- Кнопка выключения
-VisualsTab:AddButton({
-    Title = "❌ Disable Emote Changer",
-    Callback = function()
-        if SimpleEmoteChanger.originalFire then
-            local EmoteRemote = game:GetService("ReplicatedStorage")
-                :WaitForChild("Events")
-                :WaitForChild("Character")
-                :WaitForChild("Emote")
-            
-            if EmoteRemote then
-                EmoteRemote.FireServer = SimpleEmoteChanger.originalFire
-            end
-        end
         
-        SimpleEmoteChanger.enabled = false
-        SimpleEmoteChanger.mappings = {}
-        Fluent:Notify({
-            Title = "Emote Changer",
-            Content = "Disabled successfully!",
-            Duration = 3
-        })
+        -- Выводим в консоль
+        print("\n=== AVAILABLE EMOTES ===")
+        for _, name in ipairs(emoteNames) do
+            print(name)
+        end
+        print("=======================\n")
     end
 })
 
