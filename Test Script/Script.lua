@@ -5489,15 +5489,31 @@ end
 
 function readTagFromFolder(f)
     if not f then return nil end
-    tagAttribute = f:GetAttribute("Tag")
-    if tagAttribute ~= nil then 
-        return tagAttribute 
+    
+    -- Проверяем различные возможные места хранения тега
+    local tagValue = f:GetAttribute("Tag")
+    
+    -- Если тег не найден в атрибутах, ищем в других местах
+    if not tagValue then
+        -- Проверяем прямую структуру
+        if f:FindFirstChild("Tag") and f.Tag:IsA("NumberValue") then
+            tagValue = f.Tag.Value
+        elseif f:FindFirstChild("Tag") and f.Tag:IsA("StringValue") then
+            tagValue = f.Tag.Value
+        elseif f:FindFirstChild("Tag") and f.Tag:IsA("IntValue") then
+            tagValue = f.Tag.Value
+        end
     end
-    tagChild = f:FindFirstChild("Tag")
-    if tagChild and tagChild:IsA("ValueBase") then 
-        return tagChild.Value 
+    
+    -- Если все еще нет, пытаемся получить из Character
+    if not tagValue and player.Character then
+        local characterFolder = workspace.Game.Players:FindFirstChild(player.Name)
+        if characterFolder then
+            tagValue = characterFolder:GetAttribute("Tag")
+        end
     end
-    return nil
+    
+    return tagValue
 end
 
 function onRespawn()
@@ -5508,18 +5524,38 @@ function onRespawn()
         startTime = tick()
         
         while tick() - startTime < 10 do
+            -- Ищем игрока в нескольких местах
+            local playerFolder = nil
+            
+            -- Место 1: workspace.Game.Players
             if workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Players") then
                 playerFolder = workspace.Game.Players:FindFirstChild(player.Name)
-                if playerFolder then
-                    currentTag = readTagFromFolder(playerFolder)
-                    if currentTag then
-                        tagNumber = tonumber(currentTag)
-                        if tagNumber and tagNumber >= 0 and tagNumber <= 255 then
-                            print("Emote Changer: Found tag", tagNumber)
-                            break
-                        else
-                            currentTag = nil
-                        end
+            end
+            
+            -- Место 2: workspace.Players (альтернативное)
+            if not playerFolder then
+                playerFolder = workspace:FindFirstChild("Players") and workspace.Players:FindFirstChild(player.Name)
+            end
+            
+            -- Место 3: workspace (прямой поиск)
+            if not playerFolder then
+                for _, obj in pairs(workspace:GetChildren()) do
+                    if obj.Name == player.Name and obj:IsA("Model") then
+                        playerFolder = obj
+                        break
+                    end
+                end
+            end
+            
+            if playerFolder then
+                currentTag = readTagFromFolder(playerFolder)
+                if currentTag then
+                    tagNumber = tonumber(currentTag)
+                    if tagNumber and tagNumber >= 0 and tagNumber <= 255 then
+                        print("✅ Emote Changer: Found tag", tagNumber)
+                        break
+                    else
+                        currentTag = nil
                     end
                 end
             end
@@ -5527,7 +5563,9 @@ function onRespawn()
         end
         
         if not currentTag then
-            print("Emote Changer: Could not find tag after 10 seconds")
+            print("⚠️ Emote Changer: Could not find tag after 10 seconds")
+            -- Пробуем получить дефолтный тег
+            currentTag = "0"
         end
     end)
 end
