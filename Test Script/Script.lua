@@ -5464,15 +5464,10 @@ task.spawn(function()
         FakeStreaksInput:SetValue(tostring(currentStreak))
     end
 end)
--- ==================== EMOTE CHANGER (ИСПРАВЛЕННЫЙ) ====================
-
 VisualsTab:AddSection("Emote Changer")
-
--- Удаляем ВСЁ старое и заменяем на это:
 
 local player = game:GetService("Players").LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
 local emoteMappings = {}
 local emoteEnabled = {}
@@ -5498,77 +5493,57 @@ local function replaceEmote(emoteName, slot)
     local normalizedEmote = emoteName:lower():gsub("%s+", "")
     
     if normalizedCurrent == normalizedEmote then
-        print("[Emote Changer] Заменяем " .. emoteName .. " на " .. emoteMappings[slot].replace .. " (слот " .. slot .. ")")
         return emoteMappings[slot].replace
     end
     
     return emoteName
 end
 
--- Хук для Emote Remote (простая и надежная версия)
+-- Хук для Emote Remote
 local function hookEmoteRemote()
     if emoteHooked then return end
     
-    local Events = ReplicatedStorage:WaitForChild("Events")
-    if not Events then
-        Fluent:Notify({
-            Title = "Emote Changer",
-            Content = "Events folder not found",
-            Duration = 3
-        })
-        return
-    end
-    
-    local CharacterEvents = Events:WaitForChild("Character")
-    if not CharacterEvents then
-        Fluent:Notify({
-            Title = "Emote Changer",
-            Content = "Character events not found",
-            Duration = 3
-        })
-        return
-    end
-    
-    local EmoteRemote = CharacterEvents:WaitForChild("Emote")
-    if not EmoteRemote then
-        Fluent:Notify({
-            Title = "Emote Changer",
-            Content = "Emote remote not found",
-            Duration = 3
-        })
-        return
-    end
-    
-    -- Сохраняем оригинальный FireServer
-    local originalFireServer = EmoteRemote.FireServer
-    
-    -- Заменяем FireServer
-    EmoteRemote.FireServer = function(self, emoteName, ...)
-        local args = {...}
+    local success, err = pcall(function()
+        local Events = ReplicatedStorage:WaitForChild("Events")
+        if not Events then return end
         
-        -- Проверяем все слоты на замену
-        for slot = 1, 12 do
-            if emoteEnabled[slot] and emoteMappings[slot].current ~= "" then
-                local replacedEmote = replaceEmote(emoteName, slot)
-                if replacedEmote ~= emoteName then
-                    print("[Emote Changer] Отправляем замененную эмоцию: " .. replacedEmote)
-                    return originalFireServer(self, replacedEmote, unpack(args))
+        local CharacterEvents = Events:WaitForChild("Character")
+        if not CharacterEvents then return end
+        
+        local EmoteRemote = CharacterEvents:WaitForChild("Emote")
+        if not EmoteRemote then return end
+        
+        -- Сохраняем оригинальный FireServer
+        local originalFireServer = EmoteRemote.FireServer
+        
+        -- Заменяем FireServer
+        EmoteRemote.FireServer = function(self, emoteName, ...)
+            local args = {...}
+            
+            -- Проверяем все слоты на замену
+            for slot = 1, 12 do
+                if emoteEnabled[slot] and emoteMappings[slot].current ~= "" then
+                    local replacedEmote = replaceEmote(emoteName, slot)
+                    if replacedEmote ~= emoteName then
+                        return originalFireServer(self, replacedEmote, unpack(args))
+                    end
                 end
             end
+            
+            -- Если не нашли замену, отправляем оригинал
+            return originalFireServer(self, emoteName, unpack(args))
         end
         
-        -- Если не нашли замену, отправляем оригинал
-        return originalFireServer(self, emoteName, unpack(args))
+        emoteHooked = true
+    end)
+    
+    if success and emoteHooked then
+        Fluent:Notify({
+            Title = "Emote Changer",
+            Content = "Emote hook установлен",
+            Duration = 3
+        })
     end
-    
-    emoteHooked = true
-    print("[Emote Changer] Хук установлен успешно")
-    
-    Fluent:Notify({
-        Title = "Emote Changer",
-        Content = "Emote hook установлен",
-        Duration = 3
-    })
 end
 
 -- Поля ввода для текущих эмоций
@@ -5610,8 +5585,8 @@ for i = 1, 12 do
 end
 
 -- Кнопка применения настроек
-VisualsEmoteApply = VisualsTab:AddButton({
-    Title = "✅ Применить Emote Changer",
+local VisualsEmoteApply = VisualsTab:AddButton({
+    Title = "Применить Emote Changer",
     Description = "Активировать замену эмоций",
     Callback = function()
         -- Включаем хуки если еще не включены
@@ -5639,7 +5614,7 @@ VisualsEmoteApply = VisualsTab:AddButton({
         -- Формируем сообщение
         local message = ""
         if #validSlots > 0 then
-            message = message .. "✅ Активные слоты: " .. table.concat(validSlots, ", ") .. "\n\n"
+            message = message .. "Активные слоты: " .. table.concat(validSlots, ", ") .. "\n"
             
             -- Показываем какие эмоции заменяются
             message = message .. "Замены:\n"
@@ -5649,7 +5624,7 @@ VisualsEmoteApply = VisualsTab:AddButton({
         end
         
         if #invalidSlots > 0 then
-            message = message .. "\n❌ Неполные слоты: " .. table.concat(invalidSlots, ", ")
+            message = message .. "\nНеполные слоты: " .. table.concat(invalidSlots, ", ")
             message = message .. "\n(заполните оба поля)"
         end
         
@@ -5662,20 +5637,12 @@ VisualsEmoteApply = VisualsTab:AddButton({
             Content = message,
             Duration = 8
         })
-        
-        -- Выводим дебаг информацию
-        print("[Emote Changer] Настройки применены:")
-        for i = 1, 12 do
-            if emoteEnabled[i] then
-                print("  Слот " .. i .. ": " .. emoteMappings[i].current .. " -> " .. emoteMappings[i].replace)
-            end
-        end
     end
 })
 
 -- Кнопка тестирования
 VisualsTab:AddButton({
-    Title = "🎮 Тест Emote Changer",
+    Title = "Тест Emote Changer",
     Description = "Протестировать работу",
     Callback = function()
         if not emoteHooked then
@@ -5687,7 +5654,6 @@ VisualsTab:AddButton({
             return
         end
         
-        -- Показываем активные замены
         local activeCount = 0
         for i = 1, 12 do
             if emoteEnabled[i] then
@@ -5697,15 +5663,15 @@ VisualsTab:AddButton({
         
         Fluent:Notify({
             Title = "Emote Changer",
-            Content = "Активных замен: " .. activeCount .. "\nХук установлен: " .. tostring(emoteHooked),
+            Content = "Активных замен: " .. activeCount,
             Duration = 5
         })
     end
 })
 
 -- Кнопка сброса
-VisualsEmoteReset = VisualsTab:AddButton({
-    Title = "🗑️ Сбросить все Emotes",
+local VisualsEmoteReset = VisualsTab:AddButton({
+    Title = "Сбросить все Emotes",
     Description = "Очистить все настройки",
     Callback = function()
         for i = 1, 12 do
@@ -5725,75 +5691,14 @@ VisualsEmoteReset = VisualsTab:AddButton({
             Content = "Все настройки сброшены!",
             Duration = 3
         })
-        
-        print("[Emote Changer] Все настройки сброшены")
     end
 })
 
 -- Автоматическая инициализация при старте
 task.spawn(function()
-    task.wait(3) -- Ждем загрузку игры
-    
-    -- Автоматически включаем хук
-    local success, err = pcall(function()
-        hookEmoteRemote()
-    end)
-    
-    if not success then
-        print("[Emote Changer] Ошибка при автоматической установке хука: " .. err)
-    end
-    
-    print("[Emote Changer] Инициализация завершена")
+    task.wait(3)
+    hookEmoteRemote()
 end)
-
--- Дебаг функция
-VisualsTab:AddButton({
-    Title = "🔍 Debug Info",
-    Description = "Показать информацию для отладки",
-    Callback = function()
-        print("=== Emote Changer Debug ===")
-        print("Хук установлен: " .. tostring(emoteHooked))
-        print("Активные слоты:")
-        
-        local hasActive = false
-        for i = 1, 12 do
-            if emoteEnabled[i] then
-                print("  Слот " .. i .. ": " .. emoteMappings[i].current .. " -> " .. emoteMappings[i].replace)
-                hasActive = true
-            end
-        end
-        
-        if not hasActive then
-            print("  Нет активных слотов")
-        end
-        
-        -- Проверяем наличие Emote remote
-        local Events = ReplicatedStorage:FindFirstChild("Events")
-        if Events then
-            local CharacterEvents = Events:FindFirstChild("Character")
-            if CharacterEvents then
-                local EmoteRemote = CharacterEvents:FindFirstChild("Emote")
-                if EmoteRemote then
-                    print("Emote remote найден: " .. tostring(EmoteRemote))
-                else
-                    print("Emote remote не найден!")
-                end
-            else
-                print("Character events не найдены!")
-            end
-        else
-            print("Events папка не найдена!")
-        end
-        
-        print("=======================")
-        
-        Fluent:Notify({
-            Title = "Debug Info",
-            Content = "Информация выведена в консоль (F9)",
-            Duration = 5
-        })
-    end
-})
 
 VisualsEmoteApply = VisualsTab:AddButton({
     Title = "Apply Emote Mappings",
