@@ -1178,6 +1178,39 @@ end
             screenGui.ResetOnSpawn = false
             screenGui.Parent = CoreGui
 
+local function createAnimatedStroke(parent)
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(75, 0, 130)
+    stroke.Thickness = 2
+    stroke.Parent = parent
+    
+    -- Добавляем градиент для обводки
+    local strokeGradient = Instance.new("UIGradient")
+    strokeGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 200, 255)),   -- Голубой
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 100, 200)), -- Розовый
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 200, 255))    -- Голубой
+    }
+    strokeGradient.Rotation = 0
+    strokeGradient.Parent = stroke
+    
+    -- Анимация вращения градиента
+    local gradientAnimation
+    gradientAnimation = game:GetService("RunService").RenderStepped:Connect(function(delta)
+        strokeGradient.Rotation = (strokeGradient.Rotation + 120 * delta) % 360
+    end)
+    
+    -- Очистка анимации при уничтожении
+    parent.Destroying:Connect(function()
+        if gradientAnimation then
+            gradientAnimation:Disconnect()
+        end
+    end)
+    
+    return stroke, strokeGradient
+end
+
+-- Обновленная функция createGradientButton с анимированным контуром
 local function createGradientButton(parent, position, size, text)
     local button = Instance.new("Frame")
     button.Name = "GradientBtn"
@@ -1193,7 +1226,7 @@ local function createGradientButton(parent, position, size, text)
     corner.CornerRadius = UDim.new(1, 0)
     corner.Parent = button
 
-    -- АНИМИРОВАННЫЙ ГРАДИЕНТ
+    -- АНИМИРОВАННЫЙ ГРАДИЕНТ фона
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
         ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 180, 255)),   -- Голубой
@@ -1203,16 +1236,14 @@ local function createGradientButton(parent, position, size, text)
     gradient.Rotation = 0
     gradient.Parent = button
 
-    -- Анимация вращения градиента (постоянно крутится)
+    -- Анимация вращения градиента фона
     local gradientAnimation
     gradientAnimation = game:GetService("RunService").RenderStepped:Connect(function(delta)
         gradient.Rotation = (gradient.Rotation + 90 * delta) % 360
     end)
 
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(75, 0, 130)
-    stroke.Thickness = 2
-    stroke.Parent = button
+    -- АНИМИРОВАННЫЙ КОНТУР с вращающимся градиентом
+    local stroke, strokeGradient = createAnimatedStroke(button)
 
     local label = Instance.new("TextLabel")
     label.Text = text
@@ -1232,10 +1263,6 @@ local function createGradientButton(parent, position, size, text)
     clicker.Selectable = false
     clicker.Parent = button
 
-    clicker.MouseButton1Click:Connect(function()
-        manualRevive()
-    end)
-
     -- Очистка анимации при уничтожении кнопки
     button.Destroying:Connect(function()
         if gradientAnimation then
@@ -1243,16 +1270,28 @@ local function createGradientButton(parent, position, size, text)
         end
     end)
 
-    -- Эффекты при наведении (только цвет обводки)
+    -- Эффекты при наведении (усиление градиента контура)
     clicker.MouseEnter:Connect(function()
-        stroke.Color = Color3.fromRGB(186, 85, 211)
+        stroke.Thickness = 3
+        -- Меняем цвета градиента контура при наведении
+        strokeGradient.Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(150, 230, 255)),   -- Яркий голубой
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 150, 230)), -- Яркий розовый
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 230, 255))    -- Яркий голубой
+        }
     end)
 
     clicker.MouseLeave:Connect(function()
-        stroke.Color = Color3.fromRGB(75, 0, 130)
+        stroke.Thickness = 2
+        -- Возвращаем исходные цвета градиента контура
+        strokeGradient.Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 200, 255)),   -- Голубой
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 100, 200)), -- Розовый
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 200, 255))    -- Голубой
+        }
     end)
 
-    return button, clicker, stroke
+    return button, clicker, stroke, strokeGradient
                 end
             
             local buttonSize = 190
