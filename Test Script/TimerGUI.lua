@@ -21,10 +21,6 @@ local function CreateTimerGUI()
     local TimerGradient = Instance.new("UIGradient")
     local CountdownBorder = Instance.new("UIStroke")
 
-    -- Новый: Анимированный градиент для фона
-    local BackgroundGradient = Instance.new("UIGradient")
-    local backgroundAnimation
-
     MainInterface.Name = "MainInterface"
     MainInterface.Parent = PlayerGui
     MainInterface.ResetOnSpawn = false
@@ -49,8 +45,9 @@ local function CreateTimerGUI()
     TimerDisplay.Name = "TimerDisplay"
     TimerDisplay.Parent = TimerContainer
     TimerDisplay.AnchorPoint = Vector2.new(0.5, 0.5)
-    TimerDisplay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    TimerDisplay.BackgroundTransparency = 0.7  -- Полупрозрачный как у кнопок
+    -- ИЗМЕНЕНО: Убираем черный цвет фона и делаем фон прозрачным для градиента
+    TimerDisplay.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    TimerDisplay.BackgroundTransparency = 1.000  -- Полностью прозрачный
     TimerDisplay.BorderColor3 = Color3.fromRGB(27, 42, 53)
     TimerDisplay.BorderSizePixel = 0
     TimerDisplay.Position = UDim2.new(0.5, 0, 0.1, 0)
@@ -66,16 +63,34 @@ local function CreateTimerGUI()
     BorderOutline.Color = Color3.fromRGB(139, 0, 0)  -- Темно-красный
     BorderOutline.Transparency = 0.1
 
-    -- Новый: Вращающийся градиент для фона (красный-черный-красный)
+    -- СОЗДАЕМ градиентный фон вместо черного
+    local BackgroundFrame = Instance.new("Frame")
+    BackgroundFrame.Name = "BackgroundFrame"
+    BackgroundFrame.Parent = TimerDisplay
+    BackgroundFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    BackgroundFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    BackgroundFrame.BackgroundTransparency = 0.7  -- Полупрозрачный как у кнопок
+    BackgroundFrame.BorderSizePixel = 0
+    BackgroundFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    BackgroundFrame.Size = UDim2.new(1, 0, 1, 0)
+    BackgroundFrame.ZIndex = 9998  -- Ниже, чем основной контейнер
+    
+    local BackgroundCorner = Instance.new("UICorner")
+    BackgroundCorner.CornerRadius = UDim.new(0, 12)
+    BackgroundCorner.Parent = BackgroundFrame
+    
+    -- Градиент для фона (красный-черный-красный)
+    local BackgroundGradient = Instance.new("UIGradient")
     BackgroundGradient.Color = ColorSequence.new{
         ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),      -- Красный
         ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 0, 0)),     -- Черный
         ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))      -- Красный
     }
     BackgroundGradient.Rotation = 0
-    BackgroundGradient.Parent = TimerDisplay
-
+    BackgroundGradient.Parent = BackgroundFrame
+    
     -- Анимация вращения градиента
+    local backgroundAnimation
     backgroundAnimation = RunService.RenderStepped:Connect(function(delta)
         BackgroundGradient.Rotation = (BackgroundGradient.Rotation + 90 * delta) % 360
     end)
