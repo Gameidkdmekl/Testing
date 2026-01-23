@@ -21,6 +21,10 @@ local function CreateTimerGUI()
     local TimerGradient = Instance.new("UIGradient")
     local CountdownBorder = Instance.new("UIStroke")
 
+    -- Новый: Анимированный градиент для фона
+    local BackgroundGradient = Instance.new("UIGradient")
+    local backgroundAnimation
+
     MainInterface.Name = "MainInterface"
     MainInterface.Parent = PlayerGui
     MainInterface.ResetOnSpawn = false
@@ -46,7 +50,7 @@ local function CreateTimerGUI()
     TimerDisplay.Parent = TimerContainer
     TimerDisplay.AnchorPoint = Vector2.new(0.5, 0.5)
     TimerDisplay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    TimerDisplay.BackgroundTransparency = 0
+    TimerDisplay.BackgroundTransparency = 0.7  -- Полупрозрачный как у кнопок
     TimerDisplay.BorderColor3 = Color3.fromRGB(27, 42, 53)
     TimerDisplay.BorderSizePixel = 0
     TimerDisplay.Position = UDim2.new(0.5, 0, 0.1, 0)
@@ -56,10 +60,25 @@ local function CreateTimerGUI()
     RoundedCorners.CornerRadius = UDim.new(0, 12)
     RoundedCorners.Parent = TimerDisplay
 
+    -- Обновленный контур: темно-красный как у Draconic Hub
     BorderOutline.Parent = TimerDisplay
     BorderOutline.Thickness = 2
-    BorderOutline.Color = Color3.fromRGB(255, 255, 255)
-    BorderOutline.Transparency = 0.3
+    BorderOutline.Color = Color3.fromRGB(139, 0, 0)  -- Темно-красный
+    BorderOutline.Transparency = 0.1
+
+    -- Новый: Вращающийся градиент для фона (красный-черный-красный)
+    BackgroundGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),      -- Красный
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 0, 0)),     -- Черный
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))      -- Красный
+    }
+    BackgroundGradient.Rotation = 0
+    BackgroundGradient.Parent = TimerDisplay
+
+    -- Анимация вращения градиента
+    backgroundAnimation = RunService.RenderStepped:Connect(function(delta)
+        BackgroundGradient.Rotation = (BackgroundGradient.Rotation + 90 * delta) % 360
+    end)
 
     PanelBackground.Name = "PanelBackground"
     PanelBackground.Parent = TimerDisplay
@@ -142,10 +161,10 @@ local function CreateTimerGUI()
     CountdownBorder.Color = Color3.fromRGB(255, 255, 255)
     CountdownBorder.Transparency = 0.7
 
-    return CountdownText, StatusText, MainInterface, TimerContainer
+    return CountdownText, StatusText, MainInterface, TimerContainer, backgroundAnimation
 end
 
-local TimerLabel, StatusLabel, MainInterface, TimerContainer = CreateTimerGUI()
+local TimerLabel, StatusLabel, MainInterface, TimerContainer, backgroundAnimation = CreateTimerGUI()
 
 local statsFolder = workspace:WaitForChild("Game"):WaitForChild("Stats")
 
@@ -153,11 +172,11 @@ local timerConnection
 
 local function formatTime(seconds)
     if not seconds then return "0:00" end
-    
+
     seconds = math.floor(tonumber(seconds) or 0)
     local minutes = math.floor(seconds / 60)
     local remainingSeconds = seconds % 60
-    
+
     return string.format("%d:%02d", minutes, remainingSeconds)
 end
 
@@ -165,22 +184,22 @@ local function setupTimerConnection()
     if timerConnection then
         timerConnection:Disconnect()
     end
-    
+
     if statsFolder then
         timerConnection = statsFolder:GetAttributeChangedSignal("Timer"):Connect(function()
             local timerValue = statsFolder:GetAttribute("Timer")
             local roundStarted = statsFolder:GetAttribute("RoundStarted")
-            
+
             TimerLabel.Text = formatTime(timerValue)
-            
+
             TimerLabel.TextColor3 = timerValue and timerValue <= 5 and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(255, 255, 255)
-            
+
             StatusLabel.Text = roundStarted and "ROUND ACTIVE" or "INTERMISSION"
         end)
-        
+
         local initialTimer = statsFolder:GetAttribute("Timer")
         local initialRoundStarted = statsFolder:GetAttribute("RoundStarted")
-        
+
         TimerLabel.Text = formatTime(initialTimer)
         TimerLabel.TextColor3 = initialTimer and initialTimer <= 5 and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(255, 255, 255)
         StatusLabel.Text = initialRoundStarted and "ROUND ACTIVE" or "INTERMISSION"
@@ -207,4 +226,16 @@ local function cleanupTimer()
         folderAddedConnection:Disconnect()
         folderAddedConnection = nil
     end
+    if backgroundAnimation then
+        backgroundAnimation:Disconnect()
+        backgroundAnimation = nil
+    end
 end
+
+-- Автоматическая очистка анимации при удалении
+TimerContainer.Destroying:Connect(function()
+    if backgroundAnimation then
+        backgroundAnimation:Disconnect()
+        backgroundAnimation = nil
+    end
+end)
