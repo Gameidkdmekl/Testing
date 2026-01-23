@@ -82,9 +82,9 @@ local function CreateTimerGUI()
     -- Градиент для фона (красный-черный-красный)
     local BackgroundGradient = Instance.new("UIGradient")
     BackgroundGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),      -- Красный
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(139, 0, 0)),      -- Красный
         ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 0, 0)),     -- Черный
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))      -- Красный
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(139, 0, 0))      -- Красный
     }
     BackgroundGradient.Rotation = 0
     BackgroundGradient.Parent = BackgroundFrame
