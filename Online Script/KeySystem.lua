@@ -115,7 +115,7 @@ mobileBtn.Name = "MobileButton"
 mobileBtn.Size = UDim2.new(0, 120, 0, 40)
 mobileBtn.Position = UDim2.new(0, 160, 0.5, -20)
 mobileBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255) -- Синий для выбранного
-mobileBtn.Text = "📱🖥️Mobile/PC"
+mobileBtn.Text = "📱Mobile/PC"
 mobileBtn.Font = Enum.Font.SourceSansBold
 mobileBtn.TextSize = 24
 mobileBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -272,10 +272,10 @@ task.spawn(animateLogo)
 --- Platoboost Key System Configuration ---
 local service = 16094
 local secret = "9bfce86e-a6fc-4baf-93d8-4d77a2254e41"
-local useNonce = true
+local useNonce = false
 
 -- Режим тестирования (для быстрой проверки FREE ключей)
-local TEST_MODE = true
+local TEST_MODE = false
 local TEST_KEYS = {
     ["FREE_NEWYEAR"] = true,
     ["FREE_TEST"] = true,
