@@ -69,7 +69,7 @@ local function CreateTimerGUI()
     BackgroundFrame.Parent = TimerDisplay
     BackgroundFrame.AnchorPoint = Vector2.new(0.5, 0.5)
     BackgroundFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    BackgroundFrame.BackgroundTransparency = 1  -- Полупрозрачный как у кнопок
+    BackgroundFrame.BackgroundTransparency = 0  -- Полупрозрачный как у кнопок
     BackgroundFrame.BorderSizePixel = 0
     BackgroundFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
     BackgroundFrame.Size = UDim2.new(1, 0, 1, 0)
