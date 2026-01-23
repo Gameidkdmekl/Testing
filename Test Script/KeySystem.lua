@@ -36,7 +36,7 @@ spinningBackground.Size = UDim2.new(1.5, 0, 1.5, 0)
 spinningBackground.AnchorPoint = Vector2.new(0.5, 0.5)
 spinningBackground.Position = UDim2.new(0.5, 0, 0.5, 0)
 spinningBackground.BackgroundTransparency = 1
-spinningBackground.Image = "rbxassetid://110114190497817"
+spinningBackground.Image = "rbxassetid://72879616626375"
 spinningBackground.ImageTransparency = 0.3
 spinningBackground.ZIndex = 1
 spinningBackground.Parent = logoContainer
@@ -48,7 +48,7 @@ mainLogo.Size = UDim2.new(0.8, 0, 0.8, 0)
 mainLogo.AnchorPoint = Vector2.new(0.5, 0.5)
 mainLogo.Position = UDim2.new(0.5, 0, 0.5, 0)
 mainLogo.BackgroundTransparency = 1
-mainLogo.Image = "rbxassetid://104523983684961"
+mainLogo.Image = "rbxassetid://88743775446605"
 mainLogo.ZIndex = 2
 mainLogo.Parent = logoContainer
 
