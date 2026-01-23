@@ -105,7 +105,7 @@ function module.init(fluentWindow)
     topImage.AnchorPoint = Vector2.new(0.5, 0.5)
     topImage.Position = UDim2.new(0.5, -230, 0.5, -71)
     topImage.BackgroundTransparency = 1
-    topImage.Image = "rbxassetid://73806636736631"
+    topImage.Image = "rbxassetid://88743775446605"
     topImage.ZIndex = 2
     topImage.Parent = button
     topImage.Draggable = true
@@ -129,7 +129,7 @@ function module.init(fluentWindow)
     backgroundImage.AnchorPoint = Vector2.new(0.5, 0.5)
     backgroundImage.Position = UDim2.new(0.5, 0, 0.5, 0)
     backgroundImage.BackgroundTransparency = 1
-    backgroundImage.Image = "rbxassetid://88758392942706"
+    backgroundImage.Image = "rbxassetid://72879616626375"
     backgroundImage.ZIndex = 1
     backgroundImage.Parent = topImage
     backgroundImage.Interactable = false
