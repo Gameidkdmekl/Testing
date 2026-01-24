@@ -48,7 +48,7 @@ mainLogo.Size = UDim2.new(0.8, 0, 0.8, 0)
 mainLogo.AnchorPoint = Vector2.new(0.5, 0.5)
 mainLogo.Position = UDim2.new(0.5, 0, 0.5, 0)
 mainLogo.BackgroundTransparency = 1
-mainLogo.Image = "rbxassetid://88743775446605"
+mainLogo.Image = "rbxassetid://102225156206159"
 mainLogo.ZIndex = 2
 mainLogo.Parent = logoContainer
 
