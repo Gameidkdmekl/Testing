@@ -1,58 +1,55 @@
--- NextbotESP.lua - Оптимизированная версия
+-- NextbotESP.lua - Оптимизированная версия (оригинальный стиль сохранен)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
 
--- Настройки оптимизации
+-- Оригинальные переменные ESP
+local NextbotBillboards = {}
+local nextbotLoop = nil
+
+-- Оптимизационные переменные
 local BOT_CACHE = {}
 local LAST_CACHE_UPDATE = 0
-local CACHE_UPDATE_INTERVAL = 1.0  -- Обновляем кэш раз в секунду
-local MAX_VISIBLE_BOTS = 8         -- Максимум ESP на экране
-local VISIBILITY_DISTANCE = 250    -- Дистанция видимости
-local UPDATE_BATCH_SIZE = 2        -- Ботов за кадр
-local ESP_UPDATE_RATE = 0.15       -- Частота обновления (сек)
+local CACHE_UPDATE_INTERVAL = 0.7  -- Обновление кэша раз в 0.7 секунд
+local VISIBILITY_DISTANCE = 1500000    -- Максимальная дистанция видимости ESP
+local MAX_BOTS_PER_FRAME = 4       -- Максимум ботов обрабатываем за кадр
+local ESP_UPDATE_RATE = 0.12       -- Частота обновления ESP
+local LAST_ESP_UPDATE = 0
 
--- Кэш для проверки ботов
+-- Кэш для быстрой проверки nextbot'ов
+local NEXTBOT_NAME_CACHE = {}
 local NEXTBOT_PATTERNS = {
     "nextbot", "scp", "monster", "creep", 
-    "enemy", "zombie", "ghost", "demon", "bot"
+    "enemy", "zombie", "ghost", "demon"
 }
-local NEXTBOT_NAME_CACHE = {}
 
--- ESP элементы
-local ESP_CACHE = {}
-local ACTIVE_BILLBOARDS = {}
-
--- Получаем имена nextbot'ов из игры
+-- Получаем имена nextbot'ов из ReplicatedStorage (оригинальная функция)
 local function getNextbotNames()
     local names = {}
-    local success, result = pcall(function()
-        local npcs = game:GetService("ReplicatedStorage"):FindFirstChild("NPCs")
-        if npcs then
-            for _, npc in ipairs(npcs:GetChildren()) do
-                table.insert(names, npc.Name)
-            end
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    if ReplicatedStorage:FindFirstChild("NPCs") then
+        for _, npc in ipairs(ReplicatedStorage.NPCs:GetChildren()) do
+            table.insert(names, npc.Name)
         end
-    end)
+    end
     return names
 end
 
 local NEXTBOT_NAMES = getNextbotNames()
 
--- Оптимизированная проверка
+-- Оптимизированная функция проверки nextbot (оригинальная логика + кэширование)
 local function isNextbotModel(model)
     if not model or not model.Name then return false end
     
     local nameLower = model.Name:lower()
     
-    -- Проверяем кэш
+    -- Проверка кэша
     if NEXTBOT_NAME_CACHE[nameLower] ~= nil then
         return NEXTBOT_NAME_CACHE[nameLower]
     end
     
-    -- Проверка по известным именам
+    -- Проверка по известным именам из ReplicatedStorage
     for _, name in ipairs(NEXTBOT_NAMES) do
         if nameLower == name:lower() then
             NEXTBOT_NAME_CACHE[nameLower] = true
@@ -60,7 +57,7 @@ local function isNextbotModel(model)
         end
     end
     
-    -- Проверка по паттернам
+    -- Проверка по ключевым словам (оригинальная логика)
     for _, pattern in ipairs(NEXTBOT_PATTERNS) do
         if nameLower:find(pattern) then
             NEXTBOT_NAME_CACHE[nameLower] = true
@@ -72,7 +69,16 @@ local function isNextbotModel(model)
     return false
 end
 
--- Кэширование ботов
+-- Функция получения расстояния (оригинальная)
+local function getDistanceFromPlayer(targetPosition)
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then 
+        return 0 
+    end
+    local distance = (targetPosition - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+    return math.floor(distance)
+end
+
+-- Кэширование ботов (оптимизированный поиск)
 local function updateBotCache()
     local currentTime = tick()
     if currentTime - LAST_CACHE_UPDATE < CACHE_UPDATE_INTERVAL then
@@ -81,36 +87,37 @@ local function updateBotCache()
     
     LAST_CACHE_UPDATE = currentTime
     
-    -- Очищаем удаленных ботов
+    -- Быстрая очистка удаленных ботов
     for bot, data in pairs(BOT_CACHE) do
         if not bot.Parent or not data.hrp or not data.hrp.Parent then
             BOT_CACHE[bot] = nil
-            if ACTIVE_BILLBOARDS[bot] then
-                ACTIVE_BILLBOARDS[bot]:Destroy()
-                ACTIVE_BILLBOARDS[bot] = nil
+            if NextbotBillboards[bot] then
+                NextbotBillboards[bot]:Destroy()
+                NextbotBillboards[bot] = nil
             end
         end
     end
     
-    -- Поиск в Players
-    local playersFolder = workspace:FindFirstChild("Game") 
-    playersFolder = playersFolder and playersFolder:FindFirstChild("Players")
-    
-    if playersFolder then
-        for _, model in pairs(playersFolder:GetChildren()) do
-            if model:IsA("Model") and isNextbotModel(model) then
-                local hrp = model:FindFirstChild("HumanoidRootPart")
-                if hrp and not BOT_CACHE[model] then
-                    BOT_CACHE[model] = {
-                        hrp = hrp,
-                        lastSeen = currentTime
-                    }
+    -- Поиск в папке Players (Game/Players)
+    local gameFolder = workspace:FindFirstChild("Game")
+    if gameFolder then
+        local playersFolder = gameFolder:FindFirstChild("Players")
+        if playersFolder then
+            for _, model in pairs(playersFolder:GetChildren()) do
+                if model:IsA("Model") and isNextbotModel(model) then
+                    local hrp = model:FindFirstChild("HumanoidRootPart")
+                    if hrp and not BOT_CACHE[model] then
+                        BOT_CACHE[model] = {
+                            hrp = hrp,
+                            lastSeen = currentTime
+                        }
+                    end
                 end
             end
         end
     end
     
-    -- Поиск в NPCs
+    -- Поиск в папке NPCs
     local npcsFolder = workspace:FindFirstChild("NPCs")
     if npcsFolder then
         for _, model in pairs(npcsFolder:GetChildren()) do
@@ -127,192 +134,195 @@ local function updateBotCache()
     end
 end
 
--- Создание оптимизированного ESP
-local function createESP(bot)
-    if ACTIVE_BILLBOARDS[bot] then
-        return ACTIVE_BILLBOARDS[bot]
+-- Создание Billboard ESP (оригинальный стиль - просто текст)
+local function createBillboardESP(bot, hrp)
+    if NextbotBillboards[bot] and NextbotBillboards[bot].Parent then
+        return NextbotBillboards[bot]
     end
     
+    -- Создаем BillboardGui (просто текст, без фона)
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "NextbotESP"
     billboard.AlwaysOnTop = true
-    billboard.Size = UDim2.new(0, 100, 0, 40)
+    billboard.Size = UDim2.new(0, 200, 0, 50)
     billboard.StudsOffset = Vector3.new(0, 3, 0)
-    billboard.Adornee = BOT_CACHE[bot].hrp
-    billboard.Parent = BOT_CACHE[bot].hrp
+    billboard.Adornee = hrp
+    billboard.MaxDistance = VISIBILITY_DISTANCE
+    billboard.Parent = hrp
     
-    -- Фон
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 1, 0)
-    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    frame.BackgroundTransparency = 0.4
-    frame.BorderSizePixel = 0
-    frame.Parent = billboard
+    -- Текст (просто текст, без фона)
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+    textLabel.Text = bot.Name .. " [" .. getDistanceFromPlayer(hrp.Position) .. "m]"
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextSize = 16
+    textLabel.TextStrokeTransparency = 0.7
+    textLabel.Parent = billboard
     
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 4)
-    corner.Parent = frame
-    
-    -- Текст имени
-    local nameLabel = Instance.new("TextLabel")
-    nameLabel.Size = UDim2.new(1, -10, 0.5, 0)
-    nameLabel.Position = UDim2.new(0, 5, 0, 2)
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-    nameLabel.Text = bot.Name
-    nameLabel.Font = Enum.Font.GothamMedium
-    nameLabel.TextSize = 14
-    nameLabel.Parent = frame
-    
-    -- Текст здоровья
-    local healthLabel = Instance.new("TextLabel")
-    healthLabel.Size = UDim2.new(1, -10, 0.5, 0)
-    healthLabel.Position = UDim2.new(0, 5, 0.5, 0)
-    healthLabel.BackgroundTransparency = 1
-    healthLabel.TextColor3 = Color3.fromRGB(50, 255, 50)
-    healthLabel.Font = Enum.Font.GothamMedium
-    healthLabel.TextSize = 12
-    healthLabel.Parent = frame
-    
-    ACTIVE_BILLBOARDS[bot] = billboard
+    NextbotBillboards[bot] = billboard
     return billboard
 end
 
--- Обновление ESP с батчингом
+-- Обновление ESP с оптимизацией (батчинг и ограничения)
 local function updateESP()
+    local currentTime = tick()
+    
+    -- Ограничиваем частоту обновления ESP
+    if currentTime - LAST_ESP_UPDATE < ESP_UPDATE_RATE then
+        return
+    end
+    
+    LAST_ESP_UPDATE = currentTime
+    
+    -- Обновляем кэш ботов (только если прошло достаточно времени)
+    updateBotCache()
+    
     local playerChar = LocalPlayer.Character
     local playerHRP = playerChar and playerChar:FindFirstChild("HumanoidRootPart")
     
     if not playerHRP then return end
     
-    -- Обновляем кэш
-    updateBotCache()
+    -- Собираем ботов для обработки
+    local botsToProcess = {}
+    local botCount = 0
     
-    local bots = {}
     for bot, data in pairs(BOT_CACHE) do
         if data.hrp and data.hrp.Parent then
-            table.insert(bots, {bot = bot, data = data})
+            botCount = botCount + 1
+            if botCount <= 20 then -- Ограничиваем общее количество
+                botsToProcess[bot] = data.hrp
+            end
         end
     end
     
-    local visibleCount = 0
-    
-    -- Ограничиваем количество обрабатываемых ботов за кадр
-    for i = 1, math.min(#bots, UPDATE_BATCH_SIZE * 2) do
-        local botData = bots[i]
-        if not botData then break end
+    -- Обрабатываем только часть ботов за кадр (батчинг)
+    local processed = 0
+    for bot, hrp in pairs(botsToProcess) do
+        if processed >= MAX_BOTS_PER_FRAME then
+            break
+        end
         
-        local bot = botData.bot
-        local hrp = botData.data.hrp
+        processed = processed + 1
         
         -- Проверяем дистанцию
         local distance = (hrp.Position - playerHRP.Position).Magnitude
         local shouldShow = distance <= VISIBILITY_DISTANCE
         
-        if shouldShow and visibleCount < MAX_VISIBLE_BOTS then
-            visibleCount = visibleCount + 1
-            
-            -- Создаем/обновляем ESP
-            local billboard = createESP(bot)
+        if shouldShow then
+            -- Создаем или обновляем ESP
+            local billboard = createBillboardESP(bot, hrp)
             if billboard and billboard.Parent then
-                -- Обновляем позицию
+                billboard.Enabled = true
                 billboard.Adornee = hrp
                 
-                -- Обновляем здоровье
-                local humanoid = bot:FindFirstChildOfClass("Humanoid")
-                if humanoid then
-                    local healthFrame = billboard:FindFirstChild("Frame")
-                    if healthFrame then
-                        local healthLabel = healthFrame:FindFirstChild("TextLabel")
-                        if healthLabel and healthLabel.Name == "HealthLabel" then
-                            healthLabel.Text = "HP: " .. math.floor(humanoid.Health)
-                        end
-                    end
+                -- Обновляем текст
+                local textLabel = billboard:FindFirstChild("TextLabel")
+                if textLabel then
+                    textLabel.Text = bot.Name .. " [" .. math.floor(distance) .. "m]"
                 end
-                
-                billboard.Enabled = true
             end
         else
-            -- Скрываем ESP
-            if ACTIVE_BILLBOARDS[bot] then
-                ACTIVE_BILLBOARDS[bot].Enabled = false
+            -- Скрываем ESP для далеких ботов
+            if NextbotBillboards[bot] then
+                NextbotBillboards[bot].Enabled = false
             end
         end
     end
     
-    -- Очистка невидимых ESP
-    for bot, billboard in pairs(ACTIVE_BILLBOARDS) do
+    -- Быстрая очистка ESP для удаленных ботов
+    for bot, billboard in pairs(NextbotBillboards) do
         if not BOT_CACHE[bot] then
-            billboard:Destroy()
-            ACTIVE_BILLBOARDS[bot] = nil
+            pcall(function()
+                billboard:Destroy()
+            end)
+            NextbotBillboards[bot] = nil
         end
     end
 end
 
--- Основной цикл с контролем FPS
-local connection = nil
-local lastUpdate = 0
-
-local function optimizedLoop()
-    if tick() - lastUpdate < ESP_UPDATE_RATE then
-        return
-    end
+-- Основной оптимизированный цикл
+local function startESP()
+    if nextbotLoop then return end
     
-    lastUpdate = tick()
+    -- Очищаем кэши при старте
+    BOT_CACHE = {}
+    NEXTBOT_NAME_CACHE = {}
+    NextbotBillboards = {}
     
-    -- Динамическая регулировка частоты обновления
-    local fps = 1 / (tick() - lastUpdate)
-    if fps < 30 then
-        ESP_UPDATE_RATE = 0.25  -- 4 FPS при низкой производительности
-        UPDATE_BATCH_SIZE = 1
-    elseif fps > 60 then
-        ESP_UPDATE_RATE = 0.1   -- 10 FPS при высокой
-        UPDATE_BATCH_SIZE = 3
-    else
-        ESP_UPDATE_RATE = 0.15  -- ~6.5 FPS нормально
-        UPDATE_BATCH_SIZE = 2
-    end
+    -- Динамическая настройка частоты обновления
+    local lastFPS = 0
+    local frameCount = 0
+    local lastTime = tick()
     
-    -- Обновляем ESP
-    pcall(updateESP)
+    -- Запускаем оптимизированный цикл
+    nextbotLoop = RunService.RenderStepped:Connect(function()
+        frameCount = frameCount + 1
+        local currentTime = tick()
+        
+        -- Проверяем FPS каждые 2 секунды
+        if currentTime - lastTime >= 2 then
+            local fps = frameCount / (currentTime - lastTime)
+            lastFPS = math.floor(fps)
+            frameCount = 0
+            lastTime = currentTime
+            
+            -- Автоматическая настройка частоты обновления
+            if lastFPS < 25 then
+                ESP_UPDATE_RATE = 0.2  -- 5 FPS ESP
+                MAX_BOTS_PER_FRAME = 2
+                CACHE_UPDATE_INTERVAL = 1.0
+            elseif lastFPS > 60 then
+                ESP_UPDATE_RATE = 0.08  -- ~12 FPS ESP
+                MAX_BOTS_PER_FRAME = 6
+                CACHE_UPDATE_INTERVAL = 0.5
+            else
+                ESP_UPDATE_RATE = 0.12  -- ~8 FPS ESP
+                MAX_BOTS_PER_FRAME = 4
+                CACHE_UPDATE_INTERVAL = 0.7
+            end
+        end
+        
+        -- Обновляем ESP
+        pcall(updateESP)
+    end)
+    
+    print("Nextbot ESP: Started (Optimized, Original Style)")
 end
 
--- Публичные функции для управления
+-- Остановка ESP
+local function stopESP()
+    if nextbotLoop then
+        nextbotLoop:Disconnect()
+        nextbotLoop = nil
+    end
+    
+    -- Удаляем все ESP
+    for bot, billboard in pairs(NextbotBillboards) do
+        pcall(function()
+            billboard:Destroy()
+        end)
+    end
+    NextbotBillboards = {}
+    BOT_CACHE = {}
+    
+    print("Nextbot ESP: Stopped")
+end
+
+-- Публичные функции
 local NextbotESP = {}
 
 function NextbotESP.Start()
-    if connection then 
-        connection:Disconnect() 
-    end
-    
-    -- Очищаем кэши
-    BOT_CACHE = {}
-    NEXTBOT_NAME_CACHE = {}
-    
-    -- Запускаем оптимизированный цикл
-    connection = RunService.RenderStepped:Connect(optimizedLoop)
-    
-    print("NextbotESP: Started (Optimized Version)")
+    startESP()
 end
 
 function NextbotESP.Stop()
-    if connection then
-        connection:Disconnect()
-        connection = nil
-    end
-    
-    -- Очищаем все ESP
-    for bot, billboard in pairs(ACTIVE_BILLBOARDS) do
-        billboard:Destroy()
-    end
-    ACTIVE_BILLBOARDS = {}
-    BOT_CACHE = {}
-    
-    print("NextbotESP: Stopped")
+    stopESP()
 end
 
 function NextbotESP.IsRunning()
-    return connection ~= nil
+    return nextbotLoop ~= nil
 end
 
 -- Экспорт
