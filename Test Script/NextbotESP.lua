@@ -30,18 +30,40 @@ if ReplicatedStorage:FindFirstChild("NPCs") then
 end
 
 function isNextbotModel(model)
-    if not model or not model.Name then return false end
-    for _, name in ipairs(nextBotNames) do
-        if model.Name == name then return true end
+    if not model or not model.Name then 
+        return false 
     end
-    return model.Name:lower():find("nextbot") or 
-           model.Name:lower():find("scp") or 
-           model.Name:lower():find("monster") or
-           model.Name:lower():find("creep") or
-           model.Name:lower():find("enemy") or
-           model.Name:lower():find("zombie") or
-           model.Name:lower():find("ghost") or
-           model.Name:lower():find("demon")
+    
+    -- Проверяем по списку известных Nextbot имен из ReplicatedStorage
+    for _, name in ipairs(nextBotNames) do
+        if model.Name == name then 
+            return true 
+        end
+    end
+    
+    -- Более строгая проверка по ключевым словам
+    local lowerName = model.Name:lower()
+    
+    -- Проверяем явные признаки Nextbot
+    if lowerName:find("nextbot") or 
+       lowerName:find("scp%-") or  -- Только SCP- префикс
+       lowerName:find("^monster") or  -- Начинается с monster
+       lowerName:find("^creep") or     -- Начинается с creep
+       lowerName:find("^enemy") then   -- Начинается с enemy
+        return true
+    end
+    
+    -- Исключаем игроков (они не должны иметь такие имена)
+    if Players:FindFirstChild(model.Name) then
+        return false
+    end
+    
+    -- Проверяем наличие специфичных атрибутов или тегов
+    if model:GetAttribute("IsNPC") or model:GetAttribute("Nextbot") then
+        return true
+    end
+    
+    return false
 end
 
 function getDistanceFromPlayer(targetPosition)
